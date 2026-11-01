@@ -7,7 +7,8 @@ cheer coaches, stage managers, and dance studios.
 
 This repository is a modified copy of
 [GridStage](https://github.com/ChangShengHsun/GridStage) by the GridStage
-contributors. The application code stays under the MIT License in `LICENSE`
+contributors. The browser app is published at
+<https://victorch2023.github.io/gridstage/>. The application code stays under the MIT License in `LICENSE`
 (Copyright (c) 2026 GridStage contributors). Third-party pieces keep their own
 licenses and notices, and are not covered by that MIT grant:
 

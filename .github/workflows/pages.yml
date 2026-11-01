@@ -1,7 +1,8 @@
 # Deploys the web app to GitHub Pages on every push to main, so phone
 # users (Android/iOS) can open it in a browser and "Add to Home Screen" —
 # the PWA manifest + service worker make it behave like an installed app.
-# Live at: https://changshenghsun.github.io/GridStage/
+# Live at: https://<owner>.github.io/<repo>/
+# (this copy: https://victorch2023.github.io/gridstage/)
 #
 # Publishes by force-pushing the build to the gh-pages branch (a generated
 # artifact branch, its history is disposable). The official actions/deploy-pages
@@ -32,10 +33,11 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Build for the /GridStage/ subpath
+      - name: Build for the /<repo>/ subpath
         run: pnpm --filter @gridstage/web build
         env:
-          GRIDSTAGE_BASE: /GridStage/
+          # Project Pages serves the site at /<repository-name>/.
+          GRIDSTAGE_BASE: /${{ github.event.repository.name }}/
       - name: Publish dist to the gh-pages branch
         run: |
           cd apps/web/dist
