@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import type { ReactElement } from 'react';
-import { useT } from '../i18n';
+import { useLocaleStore, useT } from '../i18n';
 import { GUIDE } from './guideContent';
+import { GUIDE_ES } from './guideEs';
 
 /**
  * Usage guide, opened from the top bar. Content (guideContent.ts) is grouped
@@ -11,6 +12,8 @@ import { GUIDE } from './guideContent';
  */
 export function GuideDialog(): ReactElement {
   const t = useT();
+  const locale = useLocaleStore((s) => s.locale);
+  const guide = locale === 'es' ? GUIDE_ES : GUIDE;
   const dialogRef = useRef<HTMLDialogElement>(null);
   // Only mount the content while open: a closed <dialog>'s text still matches
   // page-wide text queries (and could overlap), so keep it out of the DOM.
@@ -47,12 +50,12 @@ export function GuideDialog(): ReactElement {
               </button>
             </div>
             <div className="guide-body">
-              {GUIDE.map((section, i) => (
+              {guide.map((section, i) => (
                 <details key={section.id} className="guide-section" open={i === 0}>
                   <summary>{section.title}</summary>
                   {section.intro !== undefined && <p className="guide-intro">{section.intro}</p>}
                   {section.demo !== undefined && (
-                    <p className="guide-demo">▶ 跟著做：從 Library 開啟範例「{section.demo}」</p>
+                    <p className="guide-demo">{t.guide.followDemo(section.demo)}</p>
                   )}
                   {section.features.map((f) => (
                     <div key={f.title} className="guide-feature">

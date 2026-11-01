@@ -25,6 +25,9 @@ import { useRefVideo } from './state/refVideo';
 
 export function App(): ReactElement {
   const t = useT();
+  useEffect(() => {
+    document.documentElement.lang = t.dateLocale;
+  }, [t.dateLocale]);
   const castWidth = useLayout((s) => s.castWidth);
   const propsWidth = useLayout((s) => s.propsWidth);
   const timelineHeight = useLayout((s) => s.timelineHeight);

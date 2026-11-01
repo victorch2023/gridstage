@@ -16,7 +16,16 @@ export const zh: Messages = {
   locale: {
     label: '語言',
     english: 'English',
+    spanish: 'Español',
     chinese: '中文',
+  },
+
+  defaults: {
+    performanceTitle: '未命名演出',
+    dancer: (n: number): string => `舞者 ${n}`,
+    formation: (n: number): string => `隊形 ${n}`,
+    formationCopy: (name: string): string => `${name} 複本`,
+    prop: (n: number): string => `道具 ${n}`,
   },
 
   topbar: {
@@ -114,6 +123,7 @@ export const zh: Messages = {
     openAria: '開啟使用教學',
     title: 'GridStage 使用教學',
     close: '關閉',
+    followDemo: (name: string): string => `跟著做：從 Library 開啟範例「${name}」`,
   },
 
   refVideo: {
@@ -423,6 +433,7 @@ export const zh: Messages = {
     pinTitle: '在這個隊形上釘一則文字註記；點擊註記可刪除',
     pinPrompt: '註記內容：',
     canvasAria: '舞台畫布',
+    zoomHint: '滾輪或雙指捏合可縮放舞台',
     closeDrawerAria: '關閉側邊面板',
     audience: '觀眾席',
     loading3d: '正在載入 3D 預覽…',
@@ -491,10 +502,24 @@ export const zh: Messages = {
     zoomOut: '縮小',
     zoomIn: '放大',
     playing: '播放中',
-    hint: '拖曳隊形以移動 · Ctrl+滾輪縮放',
+    hint: 'Ctrl+滾輪縮放時間 · 滾輪縮放舞台',
     playheadAria: '播放頭位置',
     removeBeatAria: (seconds: string): string => `移除 ${seconds} 秒處的節拍標記`,
     formationAria: (name: string, seconds: string): string => `隊形 ${name}，開始於 ${seconds} 秒`,
+  },
+
+  print: {
+    roster: '名單',
+    page: (n: number): string => `第 ${n} 頁`,
+    summary: (performers: number, formations: number, w: number, h: number): string =>
+      `${performers} 位舞者 · ${formations} 個隊形 · 舞台 ${w}m × ${h}m`,
+    transitionOut: (kind: string): string => `出場走位：${kind}`,
+    transitionLinear: '直線',
+    transitionCurve: '曲線',
+    colFormation: '隊形',
+    colTime: '時間',
+    colFace: '面向',
+    moreRows: (n: number): string => `還有 ${n} 列…`,
   },
 
   videoExport: {

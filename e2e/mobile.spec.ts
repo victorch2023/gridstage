@@ -9,6 +9,12 @@ test('page never overflows the phone screen', async ({ page }) => {
   // item without overflow containment, so its no-wrap toolbar stretched
   // the single column to ~890px — stage and topbar ran off a 390px screen
   // with no way to pan to them.
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      'gridstage-locale',
+      JSON.stringify({ state: { locale: 'en' }, version: 0 }),
+    );
+  });
   await page.goto('/');
   await expect(page.locator('.app-narrow')).toHaveCount(1);
   await expect(page.getByRole('button', { name: 'Cast' })).toBeVisible();

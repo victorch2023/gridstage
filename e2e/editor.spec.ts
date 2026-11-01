@@ -25,13 +25,17 @@ async function readDoc(page: Page): Promise<PersistedDoc['state']> {
   return doc.state;
 }
 
-/** Stage-area layout mirror of the app: meters -> viewport px (12x8m stage). */
+/**
+ * Stage-area layout mirror of the app: meters -> viewport px (12×8 m stage).
+ * Fresh documents use performer view (`audienceAt: 'top'`), so the plan is
+ * mirrored: stored downstage (high y) lands toward the top of the screen.
+ */
 function meterToPx(xM: number, yM: number): { x: number; y: number } {
   const area = { x: 216, y: 46, w: 1440 - 216 - 248, h: 900 - 46 - 210 };
   const ppm = Math.min((area.w - 88) / 12, (area.h - 88) / 8);
   const ox = area.x + (area.w - 12 * ppm) / 2;
   const oy = area.y + (area.h - 8 * ppm) / 2;
-  return { x: ox + xM * ppm, y: oy + yM * ppm };
+  return { x: ox + (12 - xM) * ppm, y: oy + (8 - yM) * ppm };
 }
 
 /** 2s 16-bit mono WAV, 440Hz — in-memory upload fixture. */
@@ -69,6 +73,11 @@ test.beforeEach(async ({ page }) => {
     };
     parsed.state = { ...parsed.state, uiMode: 'expert' };
     localStorage.setItem('gridstage-layout', JSON.stringify(parsed));
+    // The app defaults to Spanish. The suite asserts the English UI.
+    localStorage.setItem(
+      'gridstage-locale',
+      JSON.stringify({ state: { locale: 'en' }, version: 0 }),
+    );
   });
   await page.goto('/');
   await page.getByText('Add performer').waitFor();
@@ -1037,6 +1046,7 @@ test('60 performers: playback holds a usable frame rate and drag still works', a
         beatMarkersMs: [],
         sections: [],
         countSegments: [],
+        audienceAt: 'top',
       },
       performers,
       props: [],

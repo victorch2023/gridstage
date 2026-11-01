@@ -15,7 +15,16 @@ export const en = {
   locale: {
     label: 'Language',
     english: 'English',
+    spanish: 'Español',
     chinese: '中文',
+  },
+
+  defaults: {
+    performanceTitle: 'Untitled performance',
+    dancer: (n: number): string => `Dancer ${n}`,
+    formation: (n: number): string => `Formation ${n}`,
+    formationCopy: (name: string): string => `${name} copy`,
+    prop: (n: number): string => `Prop ${n}`,
   },
 
   topbar: {
@@ -114,6 +123,8 @@ export const en = {
     openAria: 'Open the guide',
     title: 'Guide',
     close: 'Close',
+    followDemo: (name: string): string =>
+      `Follow along: open the example “${name}” from the Library`,
   },
 
   refVideo: {
@@ -440,6 +451,7 @@ export const en = {
     pinTitle: 'Drop a text note on this formation; click a note to erase it',
     pinPrompt: 'Note text:',
     canvasAria: 'Stage canvas',
+    zoomHint: 'Scroll, or pinch with two fingers, to zoom the stage',
     audience: 'AUDIENCE',
     loading3d: 'Loading 3D preview…',
     to3dTitle: '3D preview (view only)',
@@ -509,11 +521,25 @@ export const en = {
     zoomOut: 'Zoom out',
     zoomIn: 'Zoom in',
     playing: 'playing',
-    hint: 'drag formations to move · Ctrl+scroll to zoom',
+    hint: 'Ctrl+scroll zooms time · scroll zooms the stage',
     playheadAria: 'Playhead position',
     removeBeatAria: (seconds: string): string => `Remove beat marker at ${seconds}s`,
     formationAria: (name: string, seconds: string): string =>
       `Formation ${name}, starts at ${seconds}s`,
+  },
+
+  print: {
+    roster: 'Roster',
+    page: (n: number): string => `page ${n}`,
+    summary: (performers: number, formations: number, w: number, h: number): string =>
+      `${performers} performer${performers === 1 ? '' : 's'} · ${formations} formation${formations === 1 ? '' : 's'} · stage ${w}m × ${h}m`,
+    transitionOut: (kind: string): string => `transition out: ${kind}`,
+    transitionLinear: 'linear',
+    transitionCurve: 'curve',
+    colFormation: 'Formation',
+    colTime: 'Time',
+    colFace: 'Face',
+    moreRows: (n: number): string => `+${n} more…`,
   },
 
   videoExport: {

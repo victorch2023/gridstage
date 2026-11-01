@@ -21,6 +21,7 @@ import {
   PERFORMER_COLORS,
 } from '@gridstage/shared-types';
 import { planTransition } from '@gridstage/path-planner';
+import { messages } from '../i18n';
 import { reindexByStart } from './formationOrder';
 import {
   alignSpots,
@@ -256,7 +257,7 @@ export function createInitialDoc(): DocState {
     performance: {
       id: performanceId,
       orgId: 'local',
-      title: 'Untitled performance',
+      title: messages().defaults.performanceTitle,
       stageWidth: DEFAULT_STAGE_WIDTH_M,
       stageHeight: DEFAULT_STAGE_HEIGHT_M,
       bpm: null,
@@ -264,6 +265,8 @@ export function createInitialDoc(): DocState {
       beatMarkersMs: [],
       sections: [],
       countSegments: [],
+      // Performer view: the audience sits on the top edge of the plan.
+      audienceAt: 'top',
     },
     performers: [],
     props: [],
@@ -275,7 +278,7 @@ export function createInitialDoc(): DocState {
         startTimeMs: 0,
         durationMs: DEFAULT_FORMATION_DURATION_MS,
         transitionType: 'linear',
-        name: 'Formation 1',
+        name: messages().defaults.formation(1),
       },
     ],
     positions: { [formationId]: {} },
@@ -454,7 +457,7 @@ export const useEditor = create<EditorState>()(
             const performer: Performer = {
               id: newId(),
               performanceId: s.performance.id,
-              name: `Dancer ${index + 1}`,
+              name: messages().defaults.dancer(index + 1),
               color: PERFORMER_COLORS[index % PERFORMER_COLORS.length] ?? '#e8a84c',
               role: '',
               avatarUrl: null,
@@ -602,7 +605,7 @@ export const useEditor = create<EditorState>()(
               startTimeMs,
               durationMs: DEFAULT_FORMATION_DURATION_MS,
               transitionType: 'linear',
-              name: `Formation ${ordered.length + 1}`,
+              name: messages().defaults.formation(ordered.length + 1),
             };
             // New formation starts as a copy of the previous one.
             const copied: Record<string, FormationPosition> =
@@ -638,7 +641,7 @@ export const useEditor = create<EditorState>()(
               id,
               startTimeMs,
               orderIndex: s.formations.length,
-              name: `${source.name} copy`,
+              name: messages().defaults.formationCopy(source.name),
             };
             return {
               formations: reindexByStart([...s.formations, duplicate], id, startTimeMs),
@@ -992,7 +995,7 @@ export const useEditor = create<EditorState>()(
                 startTimeMs: Math.max(0, Math.round(r.startTimeMs)),
                 durationMs: Math.max(1000, Math.round(r.endTimeMs - r.startTimeMs)),
                 transitionType: 'linear',
-                name: `Formation ${nextIndex + 1}`,
+                name: messages().defaults.formation(nextIndex + 1),
               });
               positions[id] = Object.fromEntries(
                 Object.entries(merged).map(([pid, p]) => [

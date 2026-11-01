@@ -1,4 +1,5 @@
 import type { PropKind, StageProp } from '@gridstage/shared-types';
+import { messages } from '../i18n';
 
 /** Palette for new props — earthy tones that read as "scenery, not dancer". */
 const PROP_COLORS = ['#8fb98f', '#b8863b', '#7a9cc6', '#c67a7a', '#9b8fb9'];
@@ -12,7 +13,7 @@ export function newProp(
   return {
     id,
     performanceId,
-    name: `Prop ${index + 1}`,
+    name: messages().defaults.prop(index + 1),
     kind,
     color: PROP_COLORS[index % PROP_COLORS.length] ?? '#8fb98f',
     width: kind === 'rect' ? 2 : 1,

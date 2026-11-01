@@ -26,6 +26,8 @@ import { isViewMode } from '../state/viewMode';
 import { useLayout } from '../state/layout';
 import { useStageBackground } from '../state/stageBackground';
 import { propOutline } from '../state/props';
+import { IDENTITY_STAGE_VIEW, wheelZoomFactor, zoomViewAt } from '../state/stageView';
+import type { StageZoomLayout } from '../state/stageView';
 import { useT } from '../i18n';
 
 const CURSOR_BROADCAST_MS = 80;
@@ -56,7 +58,20 @@ interface CanvasSize {
 export function StageCanvas(): ReactElement {
   const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<Konva.Stage | null>(null);
   const [size, setSize] = useState<CanvasSize>({ width: 0, height: 0 });
+  const viewRef = useRef(IDENTITY_STAGE_VIEW);
+  const [view, setView] = useState(viewRef.current);
+  const geomRef = useRef<StageZoomLayout>({
+    width: 0,
+    height: 0,
+    basePpm: 0,
+    totalW: 1,
+    totalH: 1,
+    wingX: 0,
+    wingY: 0,
+  });
+  const pinchRef = useRef<{ dist: number } | null>(null);
 
   const performance = useEditor((s) => s.performance);
   const allPerformers = useEditor((s) => s.performers);
@@ -113,6 +128,72 @@ export function StageCanvas(): ReactElement {
     return () => observer.disconnect();
   }, []);
 
+  // Scroll zooms the plan (the stage itself does not scroll). A two-finger
+  // pinch does the same on a touchscreen; trackpad pinch arrives as a wheel
+  // event. The point under the cursor stays put.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (el === null) return;
+    const zoomBy = (sx: number, sy: number, factor: number): void => {
+      const next = zoomViewAt(viewRef.current, sx, sy, factor, geomRef.current);
+      if (next === viewRef.current) return;
+      viewRef.current = next;
+      setView(next);
+    };
+    const localPoint = (clientX: number, clientY: number): { x: number; y: number } => {
+      const rect = el.getBoundingClientRect();
+      return { x: clientX - rect.left, y: clientY - rect.top };
+    };
+    const onWheel = (e: WheelEvent): void => {
+      e.preventDefault();
+      const at = localPoint(e.clientX, e.clientY);
+      zoomBy(at.x, at.y, wheelZoomFactor(e.deltaY, e.deltaMode));
+    };
+    const pinchDistance = (touches: TouchList): number => {
+      const a = touches[0];
+      const b = touches[1];
+      if (a === undefined || b === undefined) return 0;
+      return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    };
+    const onTouchStart = (e: TouchEvent): void => {
+      if (e.touches.length < 2) return;
+      pinchRef.current = { dist: pinchDistance(e.touches) };
+      stageRef.current?.stopDrag();
+      marqueeRef.current = null;
+      setMarquee(null);
+    };
+    const onTouchMove = (e: TouchEvent): void => {
+      if (e.touches.length < 2) return;
+      e.preventDefault();
+      const dist = pinchDistance(e.touches);
+      const prev = pinchRef.current;
+      const a = e.touches[0];
+      const b = e.touches[1];
+      if (prev === null || prev.dist <= 0 || dist <= 0 || a === undefined || b === undefined) {
+        pinchRef.current = { dist };
+        return;
+      }
+      const at = localPoint((a.clientX + b.clientX) / 2, (a.clientY + b.clientY) / 2);
+      zoomBy(at.x, at.y, dist / prev.dist);
+      pinchRef.current = { dist };
+    };
+    const onTouchEnd = (e: TouchEvent): void => {
+      if (e.touches.length < 2) pinchRef.current = null;
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    el.addEventListener('touchstart', onTouchStart, { capture: true });
+    el.addEventListener('touchmove', onTouchMove, { capture: true, passive: false });
+    el.addEventListener('touchend', onTouchEnd);
+    el.addEventListener('touchcancel', onTouchEnd);
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('touchstart', onTouchStart, { capture: true });
+      el.removeEventListener('touchmove', onTouchMove, { capture: true });
+      el.removeEventListener('touchend', onTouchEnd);
+      el.removeEventListener('touchcancel', onTouchEnd);
+    };
+  }, []);
+
   const { stageWidth, stageHeight } = performance;
   // Audience at the top = the plan rotated 180° (performers' perspective).
   // Only the toPx/toMeters mappings flip; stored coordinates never change.
@@ -121,17 +202,28 @@ export function StageCanvas(): ReactElement {
   const wings = performance.wings ?? { left: 0, right: 0, back: 0 };
   const totalW = stageWidth + wings.left + wings.right;
   const totalH = stageHeight + wings.back;
-  const pxPerMeter =
+  const basePpm =
     size.width > 0
       ? Math.min((size.width - MARGIN_PX * 2) / totalW, (size.height - MARGIN_PX * 2) / totalH)
       : 0;
+  // Wings swap screen edges when the plan is flipped. Zoom multiplies the
+  // fitted scale; pan keeps the point under the cursor (or pinch) fixed.
+  const wingX = flip ? wings.right : wings.left;
+  const wingY = flip ? 0 : wings.back;
+  geomRef.current = {
+    width: size.width,
+    height: size.height,
+    basePpm,
+    totalW,
+    totalH,
+    wingX,
+    wingY,
+  };
+  const pxPerMeter = basePpm * view.zoom;
   const floorW = stageWidth * pxPerMeter;
   const floorH = stageHeight * pxPerMeter;
-  // Center the FULL extent; the floor origin shifts by whichever wing ends
-  // up on-screen-left/top (they swap under flip).
-  const offsetX =
-    (size.width - totalW * pxPerMeter) / 2 + (flip ? wings.right : wings.left) * pxPerMeter;
-  const offsetY = (size.height - totalH * pxPerMeter) / 2 + (flip ? 0 : wings.back) * pxPerMeter;
+  const offsetX = view.panX + (size.width - totalW * pxPerMeter) / 2 + wingX * pxPerMeter;
+  const offsetY = view.panY + (size.height - totalH * pxPerMeter) / 2 + wingY * pxPerMeter;
   const toPx = (xM: number, yM: number): { x: number; y: number } => ({
     x: offsetX + (flip ? stageWidth - xM : xM) * pxPerMeter,
     y: offsetY + (flip ? stageHeight - yM : yM) * pxPerMeter,
@@ -155,7 +247,13 @@ export function StageCanvas(): ReactElement {
   const previousPositions = previous !== undefined ? (positions[previous.id] ?? {}) : {};
 
   if (pxPerMeter <= 0 || !Number.isFinite(pxPerMeter)) {
-    return <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />;
+    return (
+      <div
+        ref={containerRef}
+        title={t.stage.zoomHint}
+        style={{ position: 'absolute', inset: 0, touchAction: 'none' }}
+      />
+    );
   }
 
   // Clamp drags to the floor plus wings; with snap on, land on the 0.5m
@@ -175,6 +273,7 @@ export function StageCanvas(): ReactElement {
   // Stage-level pointer handlers, shared by mouse and touch (touch-action is
   // disabled on the container so one-finger drags stay on the canvas).
   const onStagePointerDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): void => {
+    if ('touches' in e.evt && e.evt.touches.length > 1) return;
     if (annotateMode !== 'off' && !isPlaying && !isViewMode) {
       const pointer = e.target.getStage()?.getPointerPosition();
       if (pointer == null) return;
@@ -276,8 +375,13 @@ export function StageCanvas(): ReactElement {
   };
 
   return (
-    <div ref={containerRef} style={{ position: 'absolute', inset: 0, touchAction: 'none' }}>
+    <div
+      ref={containerRef}
+      title={t.stage.zoomHint}
+      style={{ position: 'absolute', inset: 0, touchAction: 'none' }}
+    >
       <Stage
+        ref={stageRef}
         width={size.width}
         height={size.height}
         onMouseDown={onStagePointerDown}

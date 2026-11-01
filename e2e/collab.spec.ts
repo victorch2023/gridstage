@@ -8,6 +8,10 @@ async function forceExpert(page: Page): Promise<void> {
       'gridstage-layout',
       JSON.stringify({ state: { uiMode: 'expert' }, version: 0 }),
     );
+    localStorage.setItem(
+      'gridstage-locale',
+      JSON.stringify({ state: { locale: 'en' }, version: 0 }),
+    );
   });
 }
 
@@ -62,6 +66,14 @@ test('follow mode mirrors the peer playhead and formation', async ({ browser }) 
   const ctxB = await browser.newContext();
   const pageA = await ctxA.newPage();
   const pageB = await ctxB.newPage();
+  for (const page of [pageA, pageB]) {
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        'gridstage-locale',
+        JSON.stringify({ state: { locale: 'en' }, version: 0 }),
+      );
+    });
+  }
 
   await pageA.goto(url);
   await pageA.getByText('Add performer').waitFor();

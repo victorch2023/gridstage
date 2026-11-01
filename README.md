@@ -3,6 +3,21 @@
 Open-source collaborative stage formation & choreography editor — for choreographers,
 cheer coaches, stage managers, and dance studios.
 
+## This copy
+
+This repository is a modified copy of
+[GridStage](https://github.com/ChangShengHsun/GridStage) by the GridStage
+contributors. The application code stays under the MIT License in `LICENSE`
+(Copyright (c) 2026 GridStage contributors). Third-party pieces keep their own
+licenses and notices, and are not covered by that MIT grant:
+
+- YOLOX and RTMPose models: Apache License 2.0
+  (`apps/web/public/models/NOTICE-yolox.txt`, `NOTICE-rtmpose.txt`)
+- OSNet model: MIT (`apps/web/public/models/NOTICE-osnet.txt`,
+  Copyright (c) 2018 Kaiyang Zhou)
+- Noto Sans TC: SIL Open Font License
+  (`apps/web/src/assets/NotoSansTC-OFL.txt`)
+
 <!-- Media hosted on GitHub's CDN (uploaded via an issue), NOT committed to the repo. -->
 
 <img alt="GridStage in action" width="880"

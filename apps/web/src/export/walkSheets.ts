@@ -3,6 +3,7 @@ import { exportableState } from '../state/store';
 import { byOrder, formatEightCount, formatTimecode } from '../state/interpolate';
 import { safeFilename } from './filename';
 import { ensureCjkFont, hasCjk } from './pdfFont';
+import { messages } from '../i18n';
 
 // A4 landscape, millimeters — same sheet conventions as pdf.ts.
 const PAGE_W = 297;
@@ -41,6 +42,7 @@ export async function exportWalkSheetsPdf(): Promise<void> {
  */
 export function drawWalkSheetsInto(doc: jsPDF, font: string): void {
   const s = exportableState();
+  const t = messages();
   const ordered = byOrder(s.formations);
   // Without the CJK font, drop text helvetica cannot render (draws garbage).
   const pdfSafe = (text: string): string =>
@@ -117,7 +119,7 @@ export function drawWalkSheetsInto(doc: jsPDF, font: string): void {
     });
     doc.setFontSize(7);
     doc.setTextColor(DIM);
-    doc.text('AUDIENCE', originX + stageW / 2, flip ? originY - 2.5 : originY + stageH + 5, {
+    doc.text(t.stage.audience, originX + stageW / 2, flip ? originY - 2.5 : originY + stageH + 5, {
       align: 'center',
     });
 
@@ -172,11 +174,11 @@ export function drawWalkSheetsInto(doc: jsPDF, font: string): void {
     doc.setFontSize(8);
     doc.setTextColor(INK);
     doc.text('#', tableX, rowY);
-    doc.text('Formation', tableX + 7, rowY);
-    doc.text('Time', tableX + 34, rowY);
+    doc.text(t.print.colFormation, tableX + 7, rowY);
+    doc.text(t.print.colTime, tableX + 34, rowY);
     doc.text('8ct', tableX + 60, rowY);
     doc.text('x,y (m)', tableX + 71, rowY);
-    doc.text('Face', tableX + 85, rowY);
+    doc.text(t.print.colFace, tableX + 85, rowY);
     doc.setLineWidth(0.2);
     doc.setDrawColor(DIM);
     doc.line(tableX, rowY + 1.5, tableX + tableW, rowY + 1.5);
@@ -213,11 +215,11 @@ export function drawWalkSheetsInto(doc: jsPDF, font: string): void {
     if (stops.length > maxRows) {
       doc.setFontSize(7.5);
       doc.setTextColor(DIM);
-      doc.text(`+${stops.length - maxRows} more…`, tableX, rowY + 5 + maxRows * rowH);
+      doc.text(t.print.moreRows(stops.length - maxRows), tableX, rowY + 5 + maxRows * rowH);
     }
 
     doc.setFontSize(7.5);
     doc.setTextColor(DIM);
-    doc.text(`page ${pageIndex + 1}`, PAGE_W - MARGIN, PAGE_H - 7, { align: 'right' });
+    doc.text(t.print.page(pageIndex + 1), PAGE_W - MARGIN, PAGE_H - 7, { align: 'right' });
   });
 }

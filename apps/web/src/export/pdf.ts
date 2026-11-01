@@ -4,6 +4,7 @@ import { byOrder, formatTimecode } from '../state/interpolate';
 import { placeOutline, propOutline } from '../state/props';
 import { safeFilename } from './filename';
 import { ensureCjkFont, hasCjk } from './pdfFont';
+import { messages } from '../i18n';
 
 // A4 landscape, millimeters.
 const PAGE_W = 297;
@@ -45,6 +46,7 @@ export function chartText(): string {
  */
 export function drawWalkChartsInto(doc: jsPDF, font: string): void {
   const s = exportableState();
+  const t = messages();
   const ordered = byOrder(s.formations);
 
   drawRosterPage(doc, s.performance.title, font);
@@ -63,7 +65,7 @@ export function drawWalkChartsInto(doc: jsPDF, font: string): void {
     doc.setTextColor(DIM);
     const holdEnd = formation.startTimeMs + formation.durationMs;
     doc.text(
-      `${formatTimecode(formation.startTimeMs)} – ${formatTimecode(holdEnd)}   ·   transition out: ${formation.transitionType}`,
+      `${formatTimecode(formation.startTimeMs)} – ${formatTimecode(holdEnd)}   ·   ${t.print.transitionOut(formation.transitionType === 'curve' ? t.print.transitionCurve : t.print.transitionLinear)}`,
       MARGIN,
       MARGIN + 5,
     );
@@ -107,7 +109,7 @@ export function drawWalkChartsInto(doc: jsPDF, font: string): void {
 
     doc.setFontSize(8);
     doc.setTextColor(DIM);
-    doc.text('AUDIENCE', PAGE_W / 2, flip ? originY - 3 : originY + stageH + 6, {
+    doc.text(t.stage.audience, PAGE_W / 2, flip ? originY - 3 : originY + stageH + 6, {
       align: 'center',
     });
 
@@ -240,12 +242,13 @@ export function drawWalkChartsInto(doc: jsPDF, font: string): void {
 
     doc.setFontSize(8);
     doc.setTextColor(DIM);
-    doc.text(`page ${index + 2}`, PAGE_W - MARGIN, PAGE_H - 8, { align: 'right' });
+    doc.text(t.print.page(index + 2), PAGE_W - MARGIN, PAGE_H - 8, { align: 'right' });
   });
 }
 
 function drawRosterPage(doc: jsPDF, title: string, font: string): void {
   const s = exportableState();
+  const t = messages();
 
   doc.setFont(font, 'bold');
   doc.setFontSize(20);
@@ -255,14 +258,19 @@ function drawRosterPage(doc: jsPDF, title: string, font: string): void {
   doc.setFontSize(10);
   doc.setTextColor(DIM);
   doc.text(
-    `${s.performers.length} performers · ${s.formations.length} formations · stage ${s.performance.stageWidth}m × ${s.performance.stageHeight}m`,
+    t.print.summary(
+      s.performers.length,
+      s.formations.length,
+      s.performance.stageWidth,
+      s.performance.stageHeight,
+    ),
     MARGIN,
     MARGIN + 13,
   );
 
   doc.setFontSize(11);
   doc.setTextColor(INK);
-  doc.text('Roster', MARGIN, MARGIN + 26);
+  doc.text(t.print.roster, MARGIN, MARGIN + 26);
   doc.setLineWidth(0.2);
   doc.setDrawColor(DIM);
   doc.line(MARGIN, MARGIN + 28, PAGE_W - MARGIN, MARGIN + 28);
@@ -289,5 +297,5 @@ function drawRosterPage(doc: jsPDF, title: string, font: string): void {
 
   doc.setFontSize(8);
   doc.setTextColor(DIM);
-  doc.text('page 1', PAGE_W - MARGIN, PAGE_H - 8, { align: 'right' });
+  doc.text(t.print.page(1), PAGE_W - MARGIN, PAGE_H - 8, { align: 'right' });
 }

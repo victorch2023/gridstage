@@ -3,7 +3,7 @@ import type { ReactElement } from 'react';
 import { getLocalUser, setLocalUserName } from '../state/user';
 import { setAwarenessUser } from '../collab/collab';
 import { useLayout } from '../state/layout';
-import { useLocaleStore, useT } from '../i18n';
+import { isLocale, useLocaleStore, useT } from '../i18n';
 
 /**
  * Personal preferences (browser-level, not part of the document): display
@@ -71,8 +71,11 @@ export function PrefsDialog(): ReactElement {
             <select
               id="prefs-locale"
               value={locale}
-              onChange={(e) => setLocale(e.target.value === 'zh' ? 'zh' : 'en')}
+              onChange={(e) => {
+                if (isLocale(e.target.value)) setLocale(e.target.value);
+              }}
             >
+              <option value="es">{t.locale.spanish}</option>
               <option value="en">{t.locale.english}</option>
               <option value="zh">{t.locale.chinese}</option>
             </select>
