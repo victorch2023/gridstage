@@ -218,6 +218,8 @@ body {
 
 input[type='text'],
 input[type='number'],
+input[type='email'],
+input[type='password'],
 select {
   font-family: var(--font-body);
   font-size: 13px;
@@ -835,6 +837,33 @@ input[type='color'] {
   border-top: 1px solid var(--panel-edge);
 }
 
+.host-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--panel-edge);
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.host-gate {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  position: fixed;
+  z-index: 30;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(20, 17, 14, 0.92);
+  color: var(--ink);
+  text-align: center;
+}
+
 .export-kinds {
   display: flex;
   flex-direction: column;
@@ -1113,6 +1142,8 @@ label {
   }
   input[type='text'],
   input[type='number'],
+  input[type='email'],
+  input[type='password'],
   select {
     font-size: 16px;
     padding: 8px 10px;

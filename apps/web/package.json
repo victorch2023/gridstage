@@ -17,6 +17,7 @@
     "@gridstage/path-planner": "workspace:*",
     "@gridstage/shared-types": "workspace:*",
     "@react-three/fiber": "^9.6.1",
+    "firebase": "^13.1.0",
     "gifenc": "^1.0.3",
     "jspdf": "^3.0.0",
     "konva": "^10.0.0",

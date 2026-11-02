@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useEditor } from '../state/store';
-import { isViewMode } from '../state/viewMode';
+import { useReadOnly } from '../state/viewMode';
 
 const NUDGE_M = 0.1;
 const NUDGE_BIG_M = 1;
@@ -24,7 +24,7 @@ export function useAppHotkeys(togglePlay: () => void): void {
       const s = useEditor.getState();
 
       // Viewers can play/pause but not edit.
-      if (isViewMode) {
+      if (useReadOnly.getState().readOnly) {
         if (e.key === ' ') {
           e.preventDefault();
           togglePlay();

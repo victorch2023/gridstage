@@ -95,6 +95,11 @@ export async function deleteAudioForDoc(docId: string): Promise<void> {
   await idbPut(audioKeyFor(docId), null);
 }
 
+/** Store a track before the document that owns it becomes the open one. */
+export async function primeAudioForDoc(docId: string, blob: Blob): Promise<void> {
+  await idbPut(audioKeyFor(docId), blob);
+}
+
 export function getAudioElement(): HTMLAudioElement | null {
   return audioEl;
 }

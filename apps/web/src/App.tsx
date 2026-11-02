@@ -1,7 +1,8 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { startCollab } from './collab/collab';
-import { isViewMode } from './state/viewMode';
+import { HostUnconfiguredError, openHostedShare, ShareUnavailableError } from './host/session';
+import { useReadOnly } from './state/viewMode';
 
 // three.js is heavy — load it only when someone opens the 3D preview.
 const Stage3D = lazy(() => import('./components/Stage3D'));
@@ -25,6 +26,11 @@ import { useRefVideo } from './state/refVideo';
 
 export function App(): ReactElement {
   const t = useT();
+  const readOnly = useReadOnly((s) => s.readOnly);
+  const [hostGate, setHostGate] = useState<'ready' | 'loading' | 'error'>(() =>
+    new URLSearchParams(window.location.search).get('share') ? 'loading' : 'ready',
+  );
+  const [hostError, setHostError] = useState('');
   useEffect(() => {
     document.documentElement.lang = t.dateLocale;
   }, [t.dateLocale]);
@@ -59,13 +65,36 @@ export function App(): ReactElement {
   }, [perfId, loadBackground]);
 
   useEffect(() => {
-    const room = new URLSearchParams(window.location.search).get('room');
+    const params = new URLSearchParams(window.location.search);
+    const room = params.get('room');
     if (room !== null && room !== '') startCollab(room);
-  }, []);
+    const share = params.get('share');
+    if (share === null || share === '') return;
+    let cancelled = false;
+    void openHostedShare(share).then(
+      () => {
+        if (!cancelled) setHostGate('ready');
+      },
+      (error: unknown) => {
+        if (cancelled) return;
+        setHostError(
+          error instanceof HostUnconfiguredError
+            ? t.host.unconfigured
+            : error instanceof ShareUnavailableError
+              ? t.host.unavailable
+              : t.host.unavailable,
+        );
+        setHostGate('error');
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [t.host.unconfigured, t.host.unavailable]);
 
   return (
     <div
-      className={`app${isViewMode ? ' view-mode' : ''}${uiMode === 'easy' ? ' ui-easy' : ''}${
+      className={`app${readOnly ? ' view-mode' : ''}${uiMode === 'easy' ? ' ui-easy' : ''}${
         isNarrow ? ' app-narrow' : ''
       }${drawer === 'cast' ? ' cast-open' : ''}${drawer === 'props' ? ' props-open' : ''}`}
       // View mode's 0/1fr/0 columns come from CSS; don't override them.
@@ -74,7 +103,7 @@ export function App(): ReactElement {
       style={
         isNarrow
           ? undefined
-          : isViewMode
+          : readOnly
             ? { gridTemplateRows: `46px 1fr ${timelineHeight}px` }
             : {
                 gridTemplateColumns: `${castWidth}px 1fr ${propsWidth}px`,
@@ -152,14 +181,14 @@ export function App(): ReactElement {
           void clearAudio().then(() => setAudioVersion((v) => v + 1));
         }}
       />
-      {!isNarrow && !isViewMode && (
+      {!isNarrow && !readOnly && (
         <>
           <PanelResizer side="cast" />
           <PanelResizer side="props" />
         </>
       )}
       {!isNarrow && <PanelResizer side="timeline" />}
-      {isNarrow && !isViewMode && (
+      {isNarrow && !readOnly && (
         <>
           <button
             type="button"
@@ -187,7 +216,17 @@ export function App(): ReactElement {
           )}
         </>
       )}
-      {!isViewMode && <BackupNudge />}
+      {!readOnly && <BackupNudge />}
+      {hostGate === 'loading' && (
+        <p className="host-gate" style={{ top: 0 }}>
+          {t.host.loading}
+        </p>
+      )}
+      {hostGate === 'error' && (
+        <p className="host-gate" style={{ top: 46 }} role="alert">
+          {hostError}
+        </p>
+      )}
       <input
         ref={fileInputRef}
         type="file"

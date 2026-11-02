@@ -22,7 +22,7 @@ import type { StagePose } from '../state/interpolate';
 import { findCrossings } from '@gridstage/path-planner';
 import { isCollabActive, setAwarenessCursor } from '../collab/collab';
 import { usePeers } from '../hooks/usePeers';
-import { isViewMode } from '../state/viewMode';
+import { useReadOnly } from '../state/viewMode';
 import { useLayout } from '../state/layout';
 import { useStageBackground } from '../state/stageBackground';
 import { propOutline } from '../state/props';
@@ -57,6 +57,7 @@ interface CanvasSize {
 
 export function StageCanvas(): ReactElement {
   const t = useT();
+  const readOnly = useReadOnly((s) => s.readOnly);
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage | null>(null);
   const [size, setSize] = useState<CanvasSize>({ width: 0, height: 0 });
@@ -274,7 +275,7 @@ export function StageCanvas(): ReactElement {
   // disabled on the container so one-finger drags stay on the canvas).
   const onStagePointerDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): void => {
     if ('touches' in e.evt && e.evt.touches.length > 1) return;
-    if (annotateMode !== 'off' && !isPlaying && !isViewMode) {
+    if (annotateMode !== 'off' && !isPlaying && !readOnly) {
       const pointer = e.target.getStage()?.getPointerPosition();
       if (pointer == null) return;
       // Deleting an existing note is handled by the note's own handler.
@@ -359,7 +360,7 @@ export function StageCanvas(): ReactElement {
       clearPerformerSelection();
       return;
     }
-    if (isViewMode || marquee === null) return;
+    if (readOnly || marquee === null) return;
     // Corners land swapped when the plan is flipped — sort in meters.
     const c1 = toMeters(Math.min(marquee.x0, marquee.x1), Math.min(marquee.y0, marquee.y1));
     const c2 = toMeters(Math.max(marquee.x0, marquee.x1), Math.max(marquee.y0, marquee.y1));
@@ -527,7 +528,7 @@ export function StageCanvas(): ReactElement {
                 key={prop.id}
                 x={px.x}
                 y={px.y}
-                draggable={!isPlaying && !isViewMode}
+                draggable={!isPlaying && !readOnly}
                 dragBoundFunc={dragBound}
                 onDragStart={() => {
                   pushHistory();
@@ -682,7 +683,7 @@ export function StageCanvas(): ReactElement {
                   })}
                 </Layer>
                 {/* Curve control handles: draggable, for selected performers. */}
-                {isCurve && !isViewMode && (
+                {isCurve && !readOnly && (
                   <Layer>
                     {performers
                       .filter((p) => selectedPerformerIds.includes(p.id))
@@ -736,7 +737,7 @@ export function StageCanvas(): ReactElement {
                 key={p.id}
                 x={px.x}
                 y={px.y}
-                draggable={!isPlaying && !isViewMode}
+                draggable={!isPlaying && !readOnly}
                 dragBoundFunc={dragBound}
                 onDragStart={(e: Konva.KonvaEventObject<DragEvent>) => {
                   // One undo step per drag; frames below skip history.
