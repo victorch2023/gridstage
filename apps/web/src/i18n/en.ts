@@ -25,6 +25,8 @@ export const en = {
     formation: (n: number): string => `Formation ${n}`,
     formationCopy: (name: string): string => `${name} copy`,
     prop: (n: number): string => `Prop ${n}`,
+    fixture: (n: number): string => `Set piece ${n}`,
+    caption: (n: number): string => `Text ${n}`,
   },
 
   topbar: {
@@ -200,6 +202,19 @@ export const en = {
     open: 'Stage settings…',
     title: 'Stage settings',
     close: 'Close',
+    fixturesTitle: 'Stage objects',
+    fixturesHint:
+      'These stay in the same place in every formation: a piece of furniture, a platform, a sign. Close this dialog to drag them.',
+    addFixture: 'Add rectangle',
+    addCaption: 'Add text',
+    fixtureLabel: 'Label',
+    captionText: 'Text',
+    removePiece: 'Remove',
+    fixtureSection: 'Stage object',
+    captionSection: 'Stage text',
+    pieceWidth: 'Width (m)',
+    pieceDepth: 'Depth (m)',
+    pieceColor: 'Color',
   },
 
   beat: {
@@ -215,7 +230,7 @@ export const en = {
     uiMode: 'Interface',
     uiModeEasy: 'Easy — the essentials',
     uiModeExpert: 'Expert — every tool',
-    uiModeNote: 'Easy hides power tools (crews, props, badges, untangle, presets, tap tempo…)',
+    uiModeNote: 'Easy hides power tools (crews, badges, untangle, presets, tap tempo…)',
   },
 
   guide: {
@@ -416,12 +431,12 @@ export const en = {
   },
 
   props: {
-    title: 'Props',
-    add: 'Add prop',
-    addTitle: 'A box, platform or banner — drag it per formation like a dancer',
-    listAria: 'Props',
-    sectionTitle: 'Prop',
-    name: 'Name',
+    title: 'Formation objects',
+    add: 'Labelled objects',
+    addTitle: 'A labelled rectangle that belongs to the formation. Drag it in each formation, like a dancer.',
+    listAria: 'Formation objects',
+    sectionTitle: 'Formation object',
+    name: 'Label',
     kind: 'Shape',
     kindRect: 'Rectangle',
     kindCircle: 'Circle',

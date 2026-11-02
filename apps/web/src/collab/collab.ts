@@ -7,6 +7,8 @@ import type {
   FormationPosition,
   Performance,
   Performer,
+  StageCaption,
+  StageFixture,
   StageProp,
 } from '@gridstage/shared-types';
 import { undoOverride, useEditor } from '../state/store';
@@ -93,6 +95,8 @@ function docToRecords(s: DocState): {
   positions: Record<string, unknown>;
   comments: Record<string, unknown>;
   annotations: Record<string, unknown>;
+  fixtures: Record<string, unknown>;
+  captions: Record<string, unknown>;
 } {
   const positions: Record<string, unknown> = {};
   for (const [fid, byPerformer] of Object.entries(s.positions)) {
@@ -108,6 +112,8 @@ function docToRecords(s: DocState): {
     positions,
     comments: Object.fromEntries(s.comments.map((c) => [c.id, c])),
     annotations: Object.fromEntries(s.annotations.map((a) => [a.id, a])),
+    fixtures: Object.fromEntries((s.fixtures ?? []).map((piece) => [piece.id, piece])),
+    captions: Object.fromEntries((s.captions ?? []).map((piece) => [piece.id, piece])),
   };
 }
 
@@ -121,6 +127,8 @@ function writeDocToY(ydoc: Y.Doc, s: DocState): void {
     syncMapFromRecord(ydoc.getMap('positions'), records.positions);
     syncMapFromRecord(ydoc.getMap('comments'), records.comments);
     syncMapFromRecord(ydoc.getMap('annotations'), records.annotations);
+    syncMapFromRecord(ydoc.getMap('fixtures'), records.fixtures);
+    syncMapFromRecord(ydoc.getMap('captions'), records.captions);
   }, LOCAL_ORIGIN);
 }
 
@@ -149,6 +157,8 @@ function readDocFromY(ydoc: Y.Doc): DocState | null {
     positions,
     comments,
     annotations: [...ydoc.getMap('annotations').values()] as Annotation[],
+    fixtures: [...ydoc.getMap('fixtures').values()] as StageFixture[],
+    captions: [...ydoc.getMap('captions').values()] as StageCaption[],
   };
 }
 
@@ -276,6 +286,8 @@ export function startCollab(room: string): void {
     ydoc.getMap('positions'),
     ydoc.getMap('comments'),
     ydoc.getMap('annotations'),
+    ydoc.getMap('fixtures'),
+    ydoc.getMap('captions'),
   ];
   const undoManager = new Y.UndoManager(shared, {
     trackedOrigins: new Set([LOCAL_ORIGIN]),
@@ -317,7 +329,11 @@ export function startCollab(room: string): void {
       s.performers === prev.performers &&
       s.formations === prev.formations &&
       s.positions === prev.positions &&
-      s.comments === prev.comments
+      s.comments === prev.comments &&
+      s.annotations === prev.annotations &&
+      s.props === prev.props &&
+      s.fixtures === prev.fixtures &&
+      s.captions === prev.captions
     ) {
       return;
     }

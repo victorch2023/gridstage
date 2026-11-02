@@ -139,6 +139,8 @@ function currentDoc(): DocState {
     positions: state.positions,
     comments: state.comments,
     annotations: state.annotations,
+    fixtures: state.fixtures,
+    captions: state.captions,
   };
 }
 
@@ -390,7 +392,9 @@ async function loadIntoEditor(shareId: string): Promise<void> {
       local.formations.length > 1 ||
       local.comments.length > 0 ||
       local.props.length > 0 ||
-      local.annotations.length > 0);
+      local.annotations.length > 0 ||
+      local.fixtures.length > 0 ||
+      local.captions.length > 0);
   if (hasLocalWork) saveActiveDoc();
   if (loaded.audio !== null) {
     const copy = new Uint8Array(loaded.audio.byteLength);

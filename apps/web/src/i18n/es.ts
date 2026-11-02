@@ -22,7 +22,9 @@ export const es: Messages = {
     dancer: (n: number): string => `Bailarín ${n}`,
     formation: (n: number): string => `Formación ${n}`,
     formationCopy: (name: string): string => `${name} (copia)`,
-    prop: (n: number): string => `Utilería ${n}`,
+    prop: (n: number): string => `Objeto ${n}`,
+    fixture: (n: number): string => `Mueble ${n}`,
+    caption: (n: number): string => `Texto ${n}`,
   },
 
   topbar: {
@@ -203,6 +205,19 @@ export const es: Messages = {
     open: 'Ajustes del escenario…',
     title: 'Ajustes del escenario',
     close: 'Cerrar',
+    fixturesTitle: 'Objetos del escenario',
+    fixturesHint:
+      'Se quedan en el mismo sitio en todas las formaciones: un mueble, una tarima, un letrero. Cierra este diálogo para arrastrarlos.',
+    addFixture: 'Añadir rectángulo',
+    addCaption: 'Añadir texto',
+    fixtureLabel: 'Etiqueta',
+    captionText: 'Texto',
+    removePiece: 'Quitar',
+    fixtureSection: 'Objeto del escenario',
+    captionSection: 'Texto del escenario',
+    pieceWidth: 'Ancho (m)',
+    pieceDepth: 'Profundidad (m)',
+    pieceColor: 'Color',
   },
 
   beat: {
@@ -219,7 +234,7 @@ export const es: Messages = {
     uiModeEasy: 'Básica: lo esencial',
     uiModeExpert: 'Completa: todas las herramientas',
     uiModeNote:
-      'La básica oculta herramientas avanzadas (equipos, utilería, distintivos, desenredar, preajustes, tempo…)',
+      'La básica oculta herramientas avanzadas (equipos, distintivos, desenredar, preajustes, tempo…)',
   },
 
   guide: {
@@ -421,12 +436,13 @@ export const es: Messages = {
   },
 
   props: {
-    title: 'Utilería',
-    add: 'Añadir objeto',
-    addTitle: 'Una caja, plataforma o cartel: arrástralo en cada formación como a un bailarín',
-    listAria: 'Utilería',
-    sectionTitle: 'Objeto',
-    name: 'Nombre',
+    title: 'Objetos de la formación',
+    add: 'Objetos (etiquetables)',
+    addTitle:
+      'Un rectángulo con etiqueta que pertenece a la formación. Puedes moverlo en cada formación, como a un bailarín.',
+    listAria: 'Objetos de la formación',
+    sectionTitle: 'Objeto de la formación',
+    name: 'Etiqueta',
     kind: 'Forma',
     kindRect: 'Rectángulo',
     kindCircle: 'Círculo',

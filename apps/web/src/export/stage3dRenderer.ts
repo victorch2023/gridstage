@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { Formation, Performer, Performance, StageProp } from '@gridstage/shared-types';
+import type { Formation, Performer, Performance, StageCaption, StageFixture, StageProp } from '@gridstage/shared-types';
 import { posesAtTime } from '../state/interpolate';
 import type { PositionMap } from '../state/store';
 
@@ -13,6 +13,10 @@ export interface SceneDoc {
   performers: readonly Performer[];
   /** Stage props; drawn by the 2D renderer only (3D skips them for now). */
   props?: readonly StageProp[];
+  /** Fixed furniture. Drawn as boxes in 3D. */
+  fixtures?: readonly StageFixture[];
+  /** Fixed text marks. Drawn on the 2D plan. */
+  captions?: readonly StageCaption[];
   formations: readonly Formation[];
   positions: PositionMap;
 }
@@ -33,7 +37,7 @@ export function buildStage3dRenderer(canvas: HTMLCanvasElement, doc: SceneDoc): 
   renderer.setSize(canvas.width, canvas.height, false);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#191512');
+  scene.background = new THREE.Color('#f8f9fa');
 
   const camera = new THREE.PerspectiveCamera(50, canvas.width / canvas.height, 0.1, 1000);
   // audienceAt 'top' = performer view: same framing from the upstage side.
@@ -43,8 +47,8 @@ export function buildStage3dRenderer(canvas: HTMLCanvasElement, doc: SceneDoc): 
   camera.position.set(0, h * 0.6 + 2, cameraSide * (h * 1.1 + 4)); // audience preset
   camera.lookAt(0, 0, 0);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-  const key = new THREE.DirectionalLight(0xe8c896, 1.2);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+  const key = new THREE.DirectionalLight(0xffffff, 1.1);
   key.position.set(2, 10, 8);
   scene.add(key);
 
@@ -66,7 +70,7 @@ export function buildStage3dRenderer(canvas: HTMLCanvasElement, doc: SceneDoc): 
     return m;
   };
 
-  mesh(new THREE.BoxGeometry(w, 0.1, h), new THREE.MeshStandardMaterial({ color: '#2e2a26' }), [
+  mesh(new THREE.BoxGeometry(w, 0.1, h), new THREE.MeshStandardMaterial({ color: '#ffffff' }), [
     w / 2,
     -0.05,
     h / 2,
@@ -74,17 +78,25 @@ export function buildStage3dRenderer(canvas: HTMLCanvasElement, doc: SceneDoc): 
   mesh(
     new THREE.BoxGeometry(w, 0.02, 0.08),
     new THREE.MeshStandardMaterial({
-      color: '#e8a84c',
-      emissive: new THREE.Color('#e8a84c'),
+      color: '#1a73e8',
+      emissive: new THREE.Color('#1a73e8'),
       emissiveIntensity: 0.4,
     }),
     [w / 2, 0.02, h + 0.15],
   );
   mesh(
     new THREE.BoxGeometry(0.02, 0.02, h),
-    new THREE.MeshStandardMaterial({ color: '#e8d44c', transparent: true, opacity: 0.35 }),
+    new THREE.MeshStandardMaterial({ color: '#1a73e8', transparent: true, opacity: 0.35 }),
     [w / 2, 0.02, h / 2],
   );
+
+  for (const piece of doc.fixtures ?? []) {
+    mesh(
+      new THREE.BoxGeometry(piece.width, 0.8, piece.height),
+      new THREE.MeshStandardMaterial({ color: piece.color }),
+      [piece.x, 0.4, piece.y],
+    );
+  }
 
   const performerNodes = new Map<string, { node: THREE.Group; bar: THREE.Mesh }>();
   for (const p of performers) {
@@ -94,7 +106,7 @@ export function buildStage3dRenderer(canvas: HTMLCanvasElement, doc: SceneDoc): 
     const body = new THREE.Mesh(bodyGeo, bodyMat);
     body.position.set(0, 0.85, 0);
     const barGeo = new THREE.BoxGeometry(0.08, 0.08, 0.36);
-    const barMat = new THREE.MeshStandardMaterial({ color: '#ece5db' });
+    const barMat = new THREE.MeshStandardMaterial({ color: '#5f6368' });
     const bar = new THREE.Mesh(barGeo, barMat);
     node.add(body);
     node.add(bar);

@@ -60,6 +60,8 @@ export function parseDocFile(text: string): DocState | null {
     positions: d.positions,
     comments: Array.isArray(d.comments) ? d.comments : [],
     annotations: Array.isArray(d.annotations) ? d.annotations : [],
+    fixtures: Array.isArray(d.fixtures) ? d.fixtures : [],
+    captions: Array.isArray(d.captions) ? d.captions : [],
   };
 }
 
@@ -82,6 +84,8 @@ function activeDocSnapshot(): DocState {
     positions: s.positions,
     comments: s.comments,
     annotations: s.annotations,
+    fixtures: s.fixtures,
+    captions: s.captions,
   };
 }
 

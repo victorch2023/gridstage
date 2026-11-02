@@ -111,7 +111,7 @@ function useBadgeTexture(badge: string): CanvasTexture | null {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const size = badge.length <= 1 ? 88 : badge.length <= 2 ? 62 : 40;
-    ctx.font = `bold ${size}px 'Instrument Sans', system-ui, sans-serif`;
+    ctx.font = `bold ${size}px 'Roboto Variable', system-ui, sans-serif`;
     ctx.fillText(badge, 64, 68);
     return new CanvasTexture(canvas);
   }, [badge]);
@@ -140,7 +140,7 @@ function Performer3D({
         rotation={[0, Math.PI / 2 - facingRad, 0]}
       >
         <boxGeometry args={[0.08, 0.08, 0.36]} />
-        <meshStandardMaterial color="#ece5db" />
+        <meshStandardMaterial color="#5f6368" />
       </mesh>
       {/* badge: a paper tag stuck on the face, so it turns with the dancer */}
       {badgeTexture !== null && (
@@ -162,6 +162,8 @@ export default function Stage3D(): ReactElement {
   const allPerformers = useEditor((s) => s.performers);
   // Understudies stay in the cast but never on the stage.
   const performers = useMemo(() => allPerformers.filter(isPerformerActive), [allPerformers]);
+  const props = useEditor((s) => s.props);
+  const fixtures = useEditor((s) => s.fixtures);
   const formations = useEditor((s) => s.formations);
   const positions = useEditor((s) => s.positions);
   const selectedFormationId = useEditor((s) => s.selectedFormationId);
@@ -215,7 +217,7 @@ export default function Stage3D(): ReactElement {
       <Canvas
         shadows
         camera={{ position: [0, h * 0.9 + 3, h * 1.1 + 4], fov: 50 }}
-        style={{ position: 'absolute', inset: 0, background: '#191512' }}
+        style={{ position: 'absolute', inset: 0, background: '#f8f9fa' }}
       >
         <Controls
           cam={cam}
@@ -223,27 +225,43 @@ export default function Stage3D(): ReactElement {
           h={h}
           followPose={followId !== null ? (poses.get(followId) ?? null) : null}
         />
-        <ambientLight intensity={0.55} />
+        <ambientLight intensity={0.9} />
         {/* the tungsten wash from above-front */}
-        <directionalLight position={[2, 10, 8]} intensity={1.2} color="#e8c896" castShadow />
+        <directionalLight position={[2, 10, 8]} intensity={1.1} color="#ffffff" castShadow />
 
         {/* Everything positioned relative to stage center. */}
         <group position={[-w / 2, 0, -h / 2]}>
           {/* floor */}
           <mesh position={[w / 2, -0.05, h / 2]} receiveShadow>
             <boxGeometry args={[w, 0.1, h]} />
-            <meshStandardMaterial color="#2e2a26" />
+            <meshStandardMaterial color="#ffffff" />
           </mesh>
           {/* downstage edge marker (audience side) */}
           <mesh position={[w / 2, 0.02, h + 0.15]}>
             <boxGeometry args={[w, 0.02, 0.08]} />
-            <meshStandardMaterial color="#e8a84c" emissive="#e8a84c" emissiveIntensity={0.4} />
+            <meshStandardMaterial color="#1a73e8" emissive="#1a73e8" emissiveIntensity={0.35} />
           </mesh>
           {/* center line spike, matching the 2D canvas */}
           <mesh position={[w / 2, 0.02, h / 2]}>
             <boxGeometry args={[0.02, 0.02, h]} />
-            <meshStandardMaterial color="#e8d44c" transparent opacity={0.35} />
+            <meshStandardMaterial color="#1a73e8" transparent opacity={0.35} />
           </mesh>
+          {fixtures.map((piece) => (
+            <mesh key={piece.id} position={[piece.x, 0.4, piece.y]} castShadow>
+              <boxGeometry args={[piece.width, 0.8, piece.height]} />
+              <meshStandardMaterial color={piece.color} />
+            </mesh>
+          ))}
+          {props.map((prop) => {
+            const pose = poses.get(prop.id);
+            if (pose === undefined) return null;
+            return (
+              <mesh key={prop.id} position={[pose.x, 0.25, pose.y]} castShadow>
+                <boxGeometry args={[prop.width, 0.5, prop.height]} />
+                <meshStandardMaterial color={prop.color} />
+              </mesh>
+            );
+          })}
           {performers.map((p) => {
             const pose = poses.get(p.id);
             if (pose === undefined) return null;

@@ -140,6 +140,25 @@ export function drawWalkChartsInto(doc: jsPDF, font: string): void {
     }
     doc.setLineDashPattern([], 0);
 
+    for (const piece of s.fixtures ?? []) {
+      const [cx, cy] = toPage(piece.x, piece.y);
+      const w = piece.width * scale;
+      const h = piece.height * scale;
+      doc.setDrawColor(piece.color);
+      doc.setFillColor(piece.color);
+      doc.setLineWidth(0.4);
+      doc.rect(cx - w / 2, cy - h / 2, w, h, 'S');
+      doc.setFontSize(7);
+      doc.setTextColor(DIM);
+      doc.text(piece.label, cx, cy + 1, { align: 'center' });
+    }
+    for (const piece of s.captions ?? []) {
+      const [cx, cy] = toPage(piece.x, piece.y);
+      doc.setFontSize(9);
+      doc.setTextColor(piece.color);
+      doc.text(piece.text, cx, cy, { align: 'center' });
+    }
+
     // Props: scenery outlines under the marks.
     for (const prop of s.props) {
       const pos = positions[prop.id];

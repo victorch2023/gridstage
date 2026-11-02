@@ -25,7 +25,9 @@ export const zh: Messages = {
     dancer: (n: number): string => `舞者 ${n}`,
     formation: (n: number): string => `隊形 ${n}`,
     formationCopy: (name: string): string => `${name} 複本`,
-    prop: (n: number): string => `道具 ${n}`,
+    prop: (n: number): string => `物件 ${n}`,
+    fixture: (n: number): string => `佈景 ${n}`,
+    caption: (n: number): string => `文字 ${n}`,
   },
 
   topbar: {
@@ -195,6 +197,18 @@ export const zh: Messages = {
     open: '舞台設定…',
     title: '舞台設定',
     close: '關閉',
+    fixturesTitle: '舞台物件',
+    fixturesHint: '這些在每個隊形都停在同一個位置：家具、平台、標示。關掉這個視窗才能拖曳它們。',
+    addFixture: '新增矩形',
+    addCaption: '新增文字',
+    fixtureLabel: '標籤',
+    captionText: '文字',
+    removePiece: '移除',
+    fixtureSection: '舞台物件',
+    captionSection: '舞台文字',
+    pieceWidth: '寬度 (m)',
+    pieceDepth: '深度 (m)',
+    pieceColor: '顏色',
   },
 
   beat: {
@@ -210,7 +224,7 @@ export const zh: Messages = {
     uiMode: '介面模式',
     uiModeEasy: '簡易——只留核心功能',
     uiModeExpert: '完整——所有工具',
-    uiModeNote: '簡易模式會隱藏進階工具（班底、道具、徽章、解交叉、隊形庫、打拍校正…）',
+    uiModeNote: '簡易模式會隱藏進階工具（班底、徽章、解交叉、隊形庫、打拍校正…）',
   },
 
   guide: {
@@ -398,12 +412,12 @@ export const zh: Messages = {
   },
 
   props: {
-    title: '道具',
-    add: '新增道具',
-    addTitle: '箱子、平台或布條——和舞者一樣可在每個隊形分別拖曳',
-    listAria: '道具',
-    sectionTitle: '道具',
-    name: '名稱',
+    title: '隊形物件',
+    add: '可標籤的物件',
+    addTitle: '一個帶標籤的矩形，屬於這個隊形。可以像舞者一樣在每個隊形分別拖曳。',
+    listAria: '隊形物件',
+    sectionTitle: '隊形物件',
+    name: '標籤',
     kind: '形狀',
     kindRect: '矩形',
     kindCircle: '圓形',

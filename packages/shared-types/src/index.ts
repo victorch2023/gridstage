@@ -106,6 +106,29 @@ export interface StageProp {
 }
 
 /**
+ * Furniture or a fixed set piece. Same place in every formation.
+ * x/y is the center, in stage meters. width is along x, height along y.
+ */
+export interface StageFixture {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  label: string;
+  color: string;
+}
+
+/** A text mark glued to the stage, the same place in every formation. */
+export interface StageCaption {
+  id: string;
+  x: number;
+  y: number;
+  text: string;
+  color: string;
+}
+
+/**
  * A rehearsal note drawn on one formation's stage plan: a freehand pen
  * stroke or a text pin. Coordinates are stage meters, so notes stay glued
  * to the spot they mark on any screen size.

@@ -175,7 +175,7 @@ export function Timeline({
     void getWaveformPeaks(WAVEFORM_BINS).then((peaks) => {
       if (cancelled || peaks.length === 0) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = 'rgba(232, 168, 76, 0.45)';
+      ctx.fillStyle = 'rgba(26, 115, 232, 0.45)';
       const mid = canvas.height / 2;
       // Waveform spans only the audio's share of the timeline.
       const audioPx = (audioDurationMs() / totalMs) * canvas.width;
@@ -515,7 +515,7 @@ export function Timeline({
                 top: 0,
                 bottom: 0,
                 width: 1,
-                background: 'rgba(236, 229, 219, 0.08)',
+                background: 'rgba(32, 33, 36, 0.12)',
               }}
             >
               <span
@@ -651,7 +651,7 @@ export function Timeline({
                   width: 1.5,
                   height: '100%',
                   margin: '0 auto',
-                  background: '#e8d44c',
+                  background: '#1a73e8',
                   opacity: 0.85,
                 }}
               />
@@ -698,13 +698,13 @@ export function Timeline({
                       height: '100%',
                       display: 'flex',
                       alignItems: 'center',
-                      background: selected ? 'rgba(232, 168, 76, 0.25)' : 'rgba(46, 42, 38, 0.9)',
-                      border: `1px solid ${selected ? '#e8a84c' : '#3a322b'}`,
+                      background: selected ? '#e8f0fe' : '#ffffff',
+                      border: `1px solid ${selected ? '#1a73e8' : '#dadce0'}`,
                       // The formation's label color, as a flag along the left edge.
                       ...(f.color !== undefined && { borderLeft: `4px solid ${f.color}` }),
                       borderRadius: 4,
-                      color: '#ece5db',
-                      fontFamily: "'Instrument Sans Variable', sans-serif",
+                      color: '#202124',
+                      fontFamily: "'Roboto Variable', sans-serif",
                       fontSize: 11,
                       cursor: 'grab',
                       touchAction: 'none',
@@ -741,7 +741,7 @@ export function Timeline({
                         left: msToPx(holdEnd),
                         width: msToPx(next.startTimeMs - holdEnd),
                         top: '50%',
-                        borderTop: '1px dashed rgba(154, 143, 130, 0.6)',
+                        borderTop: '1px dashed rgba(95, 99, 104, 0.55)',
                       }}
                     />
                   )}
@@ -758,7 +758,7 @@ export function Timeline({
               top: 0,
               bottom: 0,
               width: 1.5,
-              background: '#e8a84c',
+              background: '#1a73e8',
               pointerEvents: 'none',
             }}
           />

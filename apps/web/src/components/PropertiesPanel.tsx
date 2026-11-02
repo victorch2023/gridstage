@@ -783,6 +783,8 @@ function HistorySection(): ReactElement {
               positions: s.positions,
               comments: s.comments,
               annotations: s.annotations,
+              fixtures: s.fixtures,
+              captions: s.captions,
             }).then(refresh);
           }}
         >
@@ -822,6 +824,131 @@ function HistorySection(): ReactElement {
             </button>
           </div>
         ))}
+      </div>
+    </>
+  );
+}
+
+function PieceSizeFields({
+  idPrefix,
+  width,
+  height,
+  onWidth,
+  onHeight,
+}: {
+  idPrefix: string;
+  width: number;
+  height: number;
+  onWidth: (value: number) => void;
+  onHeight: (value: number) => void;
+}): ReactElement {
+  const t = useT();
+  return (
+    <div style={{ display: 'flex', gap: 8 }}>
+      <div className="field" style={{ flex: 1 }}>
+        <label htmlFor={`${idPrefix}-width`}>{t.stageSettings.pieceWidth}</label>
+        <NumberField
+          id={`${idPrefix}-width`}
+          min={0.3}
+          max={30}
+          step={0.1}
+          value={width}
+          onCommit={(next) => onWidth(Math.max(0.3, next))}
+        />
+      </div>
+      <div className="field" style={{ flex: 1 }}>
+        <label htmlFor={`${idPrefix}-height`}>{t.stageSettings.pieceDepth}</label>
+        <NumberField
+          id={`${idPrefix}-height`}
+          min={0.3}
+          max={30}
+          step={0.1}
+          value={height}
+          onCommit={(next) => onHeight(Math.max(0.3, next))}
+        />
+      </div>
+    </div>
+  );
+}
+
+function FixtureSection(): ReactElement | null {
+  const t = useT();
+  const fixtures = useEditor((s) => s.fixtures);
+  const selectedFixtureId = useEditor((s) => s.selectedFixtureId);
+  const updateFixture = useEditor((s) => s.updateFixture);
+  const removeFixture = useEditor((s) => s.removeFixture);
+  const piece = fixtures.find((item) => item.id === selectedFixtureId);
+  if (piece === undefined) return null;
+  return (
+    <>
+      <div className="panel-title">{t.stageSettings.fixtureSection}</div>
+      <div className="panel-section">
+        <div className="field">
+          <label htmlFor="fixture-label">{t.stageSettings.fixtureLabel}</label>
+          <input
+            id="fixture-label"
+            type="text"
+            value={piece.label}
+            onChange={(event) => updateFixture(piece.id, { label: event.target.value })}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="fixture-color">{t.stageSettings.pieceColor}</label>
+          <input
+            id="fixture-color"
+            type="color"
+            value={piece.color}
+            onChange={(event) => updateFixture(piece.id, { color: event.target.value })}
+          />
+        </div>
+        <PieceSizeFields
+          idPrefix="fixture"
+          width={piece.width}
+          height={piece.height}
+          onWidth={(width) => updateFixture(piece.id, { width })}
+          onHeight={(height) => updateFixture(piece.id, { height })}
+        />
+        <button type="button" className="btn" onClick={() => removeFixture(piece.id)}>
+          {t.stageSettings.removePiece}
+        </button>
+      </div>
+    </>
+  );
+}
+
+function CaptionSection(): ReactElement | null {
+  const t = useT();
+  const captions = useEditor((s) => s.captions);
+  const selectedCaptionId = useEditor((s) => s.selectedCaptionId);
+  const updateCaption = useEditor((s) => s.updateCaption);
+  const removeCaption = useEditor((s) => s.removeCaption);
+  const piece = captions.find((item) => item.id === selectedCaptionId);
+  if (piece === undefined) return null;
+  return (
+    <>
+      <div className="panel-title">{t.stageSettings.captionSection}</div>
+      <div className="panel-section">
+        <div className="field">
+          <label htmlFor="caption-text">{t.stageSettings.captionText}</label>
+          <input
+            id="caption-text"
+            type="text"
+            value={piece.text}
+            onChange={(event) => updateCaption(piece.id, { text: event.target.value })}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="caption-color">{t.stageSettings.pieceColor}</label>
+          <input
+            id="caption-color"
+            type="color"
+            value={piece.color}
+            onChange={(event) => updateCaption(piece.id, { color: event.target.value })}
+          />
+        </div>
+        <button type="button" className="btn" onClick={() => removeCaption(piece.id)}>
+          {t.stageSettings.removePiece}
+        </button>
       </div>
     </>
   );
@@ -925,10 +1052,16 @@ export function PropertiesPanel(): ReactElement {
   const t = useT();
   const hasPerformerSelection = useEditor((s) => s.selectedPerformerIds.length > 0);
   const hasPropSelection = useEditor((s) => s.selectedPropId !== null);
+  const hasFixtureSelection = useEditor((s) => s.selectedFixtureId !== null);
+  const hasCaptionSelection = useEditor((s) => s.selectedCaptionId !== null);
 
   return (
     <aside className="props-panel side-panel">
-      {hasPropSelection ? (
+      {hasFixtureSelection ? (
+        <FixtureSection />
+      ) : hasCaptionSelection ? (
+        <CaptionSection />
+      ) : hasPropSelection ? (
         <PropSection />
       ) : hasPerformerSelection ? (
         <PerformerSection />

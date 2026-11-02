@@ -27,8 +27,7 @@ interface LayoutState {
   /** Drags land on the 0.5m lattice (grid corners and cell centers). */
   snapToGrid: boolean;
   /**
-   * 'easy' hides the power tools (crews, props, badges, groups, untangle,
-   * presets, tap tempo…) so a first-time user sees only the core flow;
+   * 'easy' hides the power tools (crews, badges, untangle, presets, tap tempo…)
    * 'expert' shows everything. New features default to expert-only.
    */
   uiMode: 'easy' | 'expert';

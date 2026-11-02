@@ -23,6 +23,14 @@ export function StageSettingsDialog(): ReactElement {
   const setBackground = useStageBackground((s) => s.set);
   const clearBackground = useStageBackground((s) => s.clear);
   const backgroundFileRef = useRef<HTMLInputElement>(null);
+  const fixtures = useEditor((s) => s.fixtures);
+  const captions = useEditor((s) => s.captions);
+  const addFixture = useEditor((s) => s.addFixture);
+  const addCaption = useEditor((s) => s.addCaption);
+  const updateFixture = useEditor((s) => s.updateFixture);
+  const updateCaption = useEditor((s) => s.updateCaption);
+  const removeFixture = useEditor((s) => s.removeFixture);
+  const removeCaption = useEditor((s) => s.removeCaption);
 
   return (
     <>
@@ -144,6 +152,56 @@ export function StageSettingsDialog(): ReactElement {
                 onChange={(e) => setStageBackgroundOpacity(Number(e.target.value))}
               />
             )}
+          </div>
+          <div className="field">
+            <label>{t.stageSettings.fixturesTitle}</label>
+            <p className="empty-note">{t.stageSettings.fixturesHint}</p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" className="btn edit-only" onClick={addFixture}>
+                {t.stageSettings.addFixture}
+              </button>
+              <button type="button" className="btn edit-only" onClick={addCaption}>
+                {t.stageSettings.addCaption}
+              </button>
+            </div>
+            {fixtures.map((piece) => (
+              <div key={piece.id} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <label className="field" style={{ flex: 1 }}>
+                  {t.stageSettings.fixtureLabel}
+                  <input
+                    type="text"
+                    value={piece.label}
+                    onChange={(event) => updateFixture(piece.id, { label: event.target.value })}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn edit-only"
+                  onClick={() => removeFixture(piece.id)}
+                >
+                  {t.stageSettings.removePiece}
+                </button>
+              </div>
+            ))}
+            {captions.map((piece) => (
+              <div key={piece.id} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <label className="field" style={{ flex: 1 }}>
+                  {t.stageSettings.captionText}
+                  <input
+                    type="text"
+                    value={piece.text}
+                    onChange={(event) => updateCaption(piece.id, { text: event.target.value })}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn edit-only"
+                  onClick={() => removeCaption(piece.id)}
+                >
+                  {t.stageSettings.removePiece}
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       </dialog>

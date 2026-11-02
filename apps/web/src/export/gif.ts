@@ -38,6 +38,8 @@ export async function exportPerformanceGif({
       performance: s.performance,
       performers: s.performers,
       props: s.props,
+      fixtures: s.fixtures,
+      captions: s.captions,
       formations: s.formations,
       positions: s.positions,
     },

@@ -3,9 +3,8 @@
 import { migrateMediaDatabases } from './state/brandMigration';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import '@fontsource-variable/bricolage-grotesque';
-import '@fontsource-variable/instrument-sans';
-import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource-variable/roboto/wght.css';
+import '@fontsource/roboto-mono/latin-400.css';
 import './index.css';
 import { App } from './App';
 import { consumeSharedDoc } from './state/shareTarget';

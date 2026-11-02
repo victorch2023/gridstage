@@ -171,14 +171,14 @@ export function CalibrationOverlay({
                 cx={o.x}
                 cy={o.y}
                 r={14}
-                fill="rgba(232,168,76,0.25)"
-                stroke="#e8a84c"
+                fill="rgba(26,115,232,0.16)"
+                stroke="#1a73e8"
                 strokeWidth={2}
                 style={{ cursor: 'grab', touchAction: 'none' }}
                 onPointerDown={onPointerDown(i)}
                 aria-label={cornerLabels[i]}
               />
-              <text x={o.x + 16} y={o.y + 4} fill="#e8a84c" fontSize={11}>
+              <text x={o.x + 16} y={o.y + 4} fill="#1a73e8" fontSize={11}>
                 {cornerLabels[i]}
               </text>
             </g>

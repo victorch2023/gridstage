@@ -22,6 +22,8 @@ function docWithTitle(title: string): DocState {
     positions: {},
     comments: [],
     annotations: [],
+    fixtures: [],
+    captions: [],
   };
 }
 

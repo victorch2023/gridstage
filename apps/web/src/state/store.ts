@@ -10,6 +10,8 @@ import type {
   Performer,
   PositionMarker,
   PropKind,
+  StageCaption,
+  StageFixture,
   StageProp,
 } from '@gridstage/shared-types';
 import {
@@ -50,6 +52,10 @@ export interface DocState {
   comments: DocComment[];
   /** Rehearsal notes (pen strokes, text pins) drawn per formation. */
   annotations: Annotation[];
+  /** Fixed set pieces (furniture). Same spot in every formation. */
+  fixtures: StageFixture[];
+  /** Fixed text marks. Same spot in every formation. */
+  captions: StageCaption[];
 }
 
 interface EditorState extends DocState {
@@ -57,6 +63,8 @@ interface EditorState extends DocState {
   selectedPerformerIds: string[];
   /** Selected prop (single-select; mutually exclusive with performers). */
   selectedPropId: string | null;
+  selectedFixtureId: string | null;
+  selectedCaptionId: string | null;
   playheadMs: number;
   isPlaying: boolean;
   /** Session-only playback speed multiplier, 0.5–2 (not persisted). */
@@ -91,6 +99,18 @@ interface EditorState extends DocState {
   updateProp: (id: string, patch: Partial<Omit<StageProp, 'id' | 'performanceId'>>) => void;
   /** Select a prop (null = deselect); clears the performer selection. */
   selectProp: (id: string | null) => void;
+
+  addFixture: () => void;
+  updateFixture: (id: string, patch: Partial<Omit<StageFixture, 'id'>>) => void;
+  moveFixture: (id: string, x: number, y: number) => void;
+  removeFixture: (id: string) => void;
+  selectFixture: (id: string | null) => void;
+
+  addCaption: () => void;
+  updateCaption: (id: string, patch: Partial<Omit<StageCaption, 'id'>>) => void;
+  moveCaption: (id: string, x: number, y: number) => void;
+  removeCaption: (id: string) => void;
+  selectCaption: (id: string | null) => void;
 
   addFormation: () => void;
   /** Insert a copy of the selected formation right after it (Ctrl+D). */
@@ -284,6 +304,8 @@ export function createInitialDoc(): DocState {
     positions: { [formationId]: {} },
     comments: [],
     annotations: [],
+    fixtures: [],
+    captions: [],
   };
 }
 
@@ -305,6 +327,14 @@ export function stageBounds(p: Performance): {
     minY: -wings.back,
     maxY: p.stageHeight,
   };
+}
+
+const SET_COLORS = ['#8a8074', '#6e8b74', '#8b7355', '#7a6a62', '#6a7a8b'];
+const CAPTION_COLOR = '#202124';
+
+function placeOnStage(performance: Performance, x: number, y: number): { x: number; y: number } {
+  const bounds = stageBounds(performance);
+  return { x: clamp(x, bounds.minX, bounds.maxX), y: clamp(y, bounds.minY, bounds.maxY) };
 }
 
 /** Default spot for the index-th cast member: rows across downstage. */
@@ -338,6 +368,8 @@ function snapshotDoc(s: DocState): DocState {
     comments: s.comments.map((c) => ({ ...c })),
     // ?? []: snapshots saved before annotations existed lack the field.
     annotations: (s.annotations ?? []).map((a) => ({ ...a })),
+    fixtures: (s.fixtures ?? []).map((piece) => ({ ...piece })),
+    captions: (s.captions ?? []).map((piece) => ({ ...piece })),
   };
 }
 
@@ -381,6 +413,8 @@ export const useEditor = create<EditorState>()(
         selectedFormationId: initialDoc.formations[0]?.id ?? '',
         selectedPerformerIds: [],
         selectedPropId: null,
+        selectedFixtureId: null,
+        selectedCaptionId: null,
         playheadMs: 0,
         isPlaying: false,
         playbackRate: 1,
@@ -565,6 +599,8 @@ export const useEditor = create<EditorState>()(
               positions,
               selectedPropId: prop.id,
               selectedPerformerIds: [],
+              selectedFixtureId: null,
+              selectedCaptionId: null,
             };
           }),
 
@@ -589,7 +625,113 @@ export const useEditor = create<EditorState>()(
             props: s.props.map((p) => (p.id === id ? { ...p, ...patch } : p)),
           })),
 
-        selectProp: (id) => set({ selectedPropId: id, selectedPerformerIds: [] }),
+        selectProp: (id) =>
+          set({
+            selectedPropId: id,
+            selectedPerformerIds: [],
+            selectedFixtureId: null,
+            selectedCaptionId: null,
+          }),
+
+        addFixture: () =>
+          mutateDoc((s) => {
+            const spot = placeOnStage(
+              s.performance,
+              s.performance.stageWidth / 2,
+              s.performance.stageHeight / 2,
+            );
+            const piece: StageFixture = {
+              id: newId(),
+              ...spot,
+              width: 2,
+              height: 1,
+              label: messages().defaults.fixture(s.fixtures.length + 1),
+              color: SET_COLORS[s.fixtures.length % SET_COLORS.length] ?? '#8a8074',
+            };
+            return {
+              fixtures: [...s.fixtures, piece],
+              selectedFixtureId: piece.id,
+              selectedCaptionId: null,
+              selectedPropId: null,
+              selectedPerformerIds: [],
+            };
+          }),
+
+        updateFixture: (id, patch) =>
+          mutateDoc((s) => ({
+            fixtures: s.fixtures.map((piece) => (piece.id === id ? { ...piece, ...patch } : piece)),
+          })),
+
+        moveFixture: (id, x, y) =>
+          set((s) => {
+            const spot = placeOnStage(s.performance, x, y);
+            return {
+              fixtures: s.fixtures.map((piece) => (piece.id === id ? { ...piece, ...spot } : piece)),
+            };
+          }),
+
+        removeFixture: (id) =>
+          mutateDoc((s) => ({
+            fixtures: s.fixtures.filter((piece) => piece.id !== id),
+            selectedFixtureId: s.selectedFixtureId === id ? null : s.selectedFixtureId,
+          })),
+
+        selectFixture: (id) =>
+          set({
+            selectedFixtureId: id,
+            selectedCaptionId: null,
+            selectedPropId: null,
+            selectedPerformerIds: [],
+          }),
+
+        addCaption: () =>
+          mutateDoc((s) => {
+            const spot = placeOnStage(
+              s.performance,
+              s.performance.stageWidth / 2,
+              s.performance.stageHeight / 2 + 1.5,
+            );
+            const piece: StageCaption = {
+              id: newId(),
+              ...spot,
+              text: messages().defaults.caption(s.captions.length + 1),
+              color: CAPTION_COLOR,
+            };
+            return {
+              captions: [...s.captions, piece],
+              selectedCaptionId: piece.id,
+              selectedFixtureId: null,
+              selectedPropId: null,
+              selectedPerformerIds: [],
+            };
+          }),
+
+        updateCaption: (id, patch) =>
+          mutateDoc((s) => ({
+            captions: s.captions.map((piece) => (piece.id === id ? { ...piece, ...patch } : piece)),
+          })),
+
+        moveCaption: (id, x, y) =>
+          set((s) => {
+            const spot = placeOnStage(s.performance, x, y);
+            return {
+              captions: s.captions.map((piece) => (piece.id === id ? { ...piece, ...spot } : piece)),
+            };
+          }),
+
+        removeCaption: (id) =>
+          mutateDoc((s) => ({
+            captions: s.captions.filter((piece) => piece.id !== id),
+            selectedCaptionId: s.selectedCaptionId === id ? null : s.selectedCaptionId,
+          })),
+
+        selectCaption: (id) =>
+          set({
+            selectedCaptionId: id,
+            selectedFixtureId: null,
+            selectedPropId: null,
+            selectedPerformerIds: [],
+          }),
 
         addFormation: () =>
           mutateDoc((s) => {
@@ -652,6 +794,14 @@ export const useEditor = create<EditorState>()(
 
         deleteSelection: () => {
           const s = get();
+          if (s.selectedFixtureId !== null) {
+            get().removeFixture(s.selectedFixtureId);
+            return;
+          }
+          if (s.selectedCaptionId !== null) {
+            get().removeCaption(s.selectedCaptionId);
+            return;
+          }
           if (s.selectedPropId !== null) {
             get().removeProp(s.selectedPropId);
             return;
@@ -1103,7 +1253,13 @@ export const useEditor = create<EditorState>()(
 
         selectFormation: (id) => set({ selectedFormationId: id }),
 
-        setPerformerSelection: (ids) => set({ selectedPerformerIds: ids, selectedPropId: null }),
+        setPerformerSelection: (ids) =>
+          set({
+            selectedPerformerIds: ids,
+            selectedPropId: null,
+            selectedFixtureId: null,
+            selectedCaptionId: null,
+          }),
 
         copyPositionsFrom: (sourceFormationId) =>
           mutateDoc((s) => {
@@ -1158,6 +1314,8 @@ export const useEditor = create<EditorState>()(
         selectPerformer: (id, additive) =>
           set((s) => ({
             selectedPropId: null,
+            selectedFixtureId: null,
+            selectedCaptionId: null,
             selectedPerformerIds: additive
               ? s.selectedPerformerIds.includes(id)
                 ? s.selectedPerformerIds.filter((p) => p !== id)
@@ -1165,7 +1323,13 @@ export const useEditor = create<EditorState>()(
               : [id],
           })),
 
-        clearPerformerSelection: () => set({ selectedPerformerIds: [], selectedPropId: null }),
+        clearPerformerSelection: () =>
+          set({
+            selectedPerformerIds: [],
+            selectedPropId: null,
+            selectedFixtureId: null,
+            selectedCaptionId: null,
+          }),
 
         addBeatMarker: (ms) =>
           mutateDoc((s) => ({
@@ -1305,6 +1469,8 @@ export const useEditor = create<EditorState>()(
             selectedFormationId: first?.id ?? '',
             selectedPerformerIds: [],
             selectedPropId: null,
+            selectedFixtureId: null,
+            selectedCaptionId: null,
             playheadMs: 0,
             isPlaying: false,
           });
@@ -1343,6 +1509,8 @@ export const useEditor = create<EditorState>()(
         positions: s.positions,
         comments: s.comments,
         annotations: s.annotations,
+        fixtures: s.fixtures,
+        captions: s.captions,
       }),
       // Docs saved before the comments feature have no `comments` key —
       // default it so actions never see undefined.
@@ -1365,6 +1533,8 @@ export const useEditor = create<EditorState>()(
           comments: p.comments ?? [],
           props: p.props ?? [],
           annotations: p.annotations ?? [],
+          fixtures: p.fixtures ?? [],
+          captions: p.captions ?? [],
         };
       },
     },

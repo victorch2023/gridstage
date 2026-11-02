@@ -19,6 +19,7 @@ export const GUIDE_ES: GuideSection[] = [
         title: 'Diálogo de ajustes',
         body: [
           'Abre Ajustes del escenario para cambiar el ancho, la profundidad, el lado de la audiencia, los laterales y la foto de fondo.',
+          'Ahí también puedes añadir rectángulos con etiqueta y textos fijos: un mueble o un letrero que no se mueve entre formaciones.',
           'Puedes volver a cambiarlos cuando quieras, sin crear la pieza de nuevo.',
         ],
         shot: 's0-stage-settings.png',

@@ -12,13 +12,13 @@ import type { SceneDoc } from './stage3dRenderer';
 const W = 1280;
 const H = 720;
 
-const BG = '#191512';
-const FLOOR = '#2e2a26';
-const INK = '#ece5db';
-const DIM = '#8a8074';
-const EDGE = '#e8a84c';
-const SANS = '"Instrument Sans", system-ui, sans-serif';
-const MONO = '"IBM Plex Mono", monospace';
+const BG = '#f8f9fa';
+const FLOOR = '#ffffff';
+const INK = '#202124';
+const DIM = '#5f6368';
+const EDGE = '#1a73e8';
+const SANS = '"Roboto Variable", system-ui, sans-serif';
+const MONO = '"Roboto Mono", monospace';
 
 export type VideoMode = '2d' | '3d';
 /** How the loaded reference video appears in the exported movie (2D only). */
@@ -65,6 +65,8 @@ export async function exportPerformanceVideo({
     performance: s.performance,
     performers: s.performers,
     props: s.props,
+    fixtures: s.fixtures,
+    captions: s.captions,
     formations: s.formations,
     positions: s.positions,
   };
@@ -239,7 +241,7 @@ export function build2dRenderer(
 
     // 1-meter grid — same reference lines the editor canvas shows.
     ctx.save();
-    ctx.globalAlpha = 0.14;
+    ctx.globalAlpha = 0.28;
     ctx.beginPath();
     for (let m = 1; m < stageWidth; m++) {
       ctx.moveTo(originX + m * scale, originY);
@@ -253,8 +255,9 @@ export function build2dRenderer(
     ctx.restore();
 
     ctx.save();
+    ctx.strokeStyle = EDGE;
     ctx.setLineDash([6, 6]);
-    ctx.globalAlpha = 0.4;
+    ctx.globalAlpha = 0.7;
     ctx.beginPath();
     ctx.moveTo(originX + stageW / 2, originY);
     ctx.lineTo(originX + stageW / 2, originY + stageH);
@@ -269,6 +272,42 @@ export function build2dRenderer(
     ctx.fillText(msg.stage.audience, W / 2, flip ? originY - 14 : originY + stageH + 28);
 
     const poses = posesAtTime(doc.formations, doc.positions, tMs);
+
+    for (const piece of doc.fixtures ?? []) {
+      const x = originX + (flip ? stageWidth - piece.x : piece.x) * scale;
+      const y = originY + (flip ? stageHeight - piece.y : piece.y) * scale;
+      const wPx = piece.width * scale;
+      const hPx = piece.height * scale;
+      ctx.save();
+      ctx.translate(x, y);
+      if (flip) ctx.rotate(Math.PI);
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = piece.color;
+      ctx.fillRect(-wPx / 2, -hPx / 2, wPx, hPx);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = piece.color;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-wPx / 2, -hPx / 2, wPx, hPx);
+      ctx.fillStyle = INK;
+      ctx.font = `12px ${MONO}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(piece.label, 0, 0);
+      ctx.restore();
+    }
+    for (const piece of doc.captions ?? []) {
+      const x = originX + (flip ? stageWidth - piece.x : piece.x) * scale;
+      const y = originY + (flip ? stageHeight - piece.y : piece.y) * scale;
+      ctx.save();
+      ctx.translate(x, y);
+      if (flip) ctx.rotate(Math.PI);
+      ctx.fillStyle = piece.color;
+      ctx.font = `16px ${SANS}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(piece.text, 0, 0);
+      ctx.restore();
+    }
 
     // Props: scenery footprints under the dancers.
     for (const prop of doc.props ?? []) {

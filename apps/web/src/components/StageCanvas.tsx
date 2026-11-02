@@ -38,7 +38,7 @@ const WEDGE_RADIUS_M = 0.85;
 const WEDGE_ANGLE_DEG = 56;
 const HIT_RADIUS_M = 0.45;
 /** Rehearsal notes draw in spike-tape amber. */
-const ANNOTATION_COLOR = '#e8d44c';
+const ANNOTATION_COLOR = '#1a73e8';
 
 /**
  * rotation 0 = facing the audience (downstage = screen bottom), degrees
@@ -81,6 +81,14 @@ export function StageCanvas(): ReactElement {
   const props = useEditor((s) => s.props);
   const selectedPropId = useEditor((s) => s.selectedPropId);
   const selectProp = useEditor((s) => s.selectProp);
+  const fixtures = useEditor((s) => s.fixtures);
+  const captions = useEditor((s) => s.captions);
+  const selectedFixtureId = useEditor((s) => s.selectedFixtureId);
+  const selectedCaptionId = useEditor((s) => s.selectedCaptionId);
+  const selectFixture = useEditor((s) => s.selectFixture);
+  const selectCaption = useEditor((s) => s.selectCaption);
+  const moveFixture = useEditor((s) => s.moveFixture);
+  const moveCaption = useEditor((s) => s.moveCaption);
   const formations = useEditor((s) => s.formations);
   const positions = useEditor((s) => s.positions);
   const selectedFormationId = useEditor((s) => s.selectedFormationId);
@@ -421,8 +429,8 @@ export function StageCanvas(): ReactElement {
                   y={Math.min(a.y, b.y)}
                   width={Math.abs(b.x - a.x)}
                   height={Math.abs(b.y - a.y)}
-                  fill="#211e1b"
-                  stroke="#4a4038"
+                  fill="#f1f3f4"
+                  stroke="#dadce0"
                   strokeWidth={1}
                   dash={[4, 4]}
                 />
@@ -439,8 +447,8 @@ export function StageCanvas(): ReactElement {
             fillRadialGradientEndPoint={{ x: floorW / 2, y: floorH * 0.35 }}
             fillRadialGradientStartRadius={0}
             fillRadialGradientEndRadius={Math.max(floorW, floorH) * 0.75}
-            fillRadialGradientColorStops={[0, '#39332c', 0.65, '#2e2a26', 1, '#262320']}
-            stroke="#4a4038"
+            fillRadialGradientColorStops={[0, '#ffffff', 0.72, '#ffffff', 1, '#f8f9fa']}
+            stroke="#dadce0"
             strokeWidth={1.5}
           />
           {/* Venue photo stretched onto the floor, under the grid; rotates
@@ -468,8 +476,8 @@ export function StageCanvas(): ReactElement {
                 offsetX + i * pxPerMeter,
                 offsetY + floorH,
               ]}
-              stroke="#ffffff"
-              opacity={0.045}
+              stroke="#dadce0"
+              opacity={1}
               strokeWidth={1}
             />
           ))}
@@ -482,16 +490,16 @@ export function StageCanvas(): ReactElement {
                 offsetX + floorW,
                 offsetY + i * pxPerMeter,
               ]}
-              stroke="#ffffff"
-              opacity={0.045}
+              stroke="#dadce0"
+              opacity={1}
               strokeWidth={1}
             />
           ))}
           {/* Center line — the center spike every stage has. */}
           <Line
             points={[offsetX + floorW / 2, offsetY, offsetX + floorW / 2, offsetY + floorH]}
-            stroke="#e8d44c"
-            opacity={0.22}
+            stroke="#1a73e8"
+            opacity={0.45}
             strokeWidth={1}
             dash={[6, 8]}
           />
@@ -501,11 +509,133 @@ export function StageCanvas(): ReactElement {
             width={floorW}
             align="center"
             text={t.stage.audience}
-            fontFamily="'IBM Plex Mono', monospace"
+            fontFamily="'Roboto Mono', monospace"
             fontSize={11}
             letterSpacing={4}
-            fill="#9a8f82"
+            fill="#5f6368"
           />
+        </Layer>
+
+        {/* Fixed set pieces and text. They do not move between formations. */}
+        <Layer listening={annotateMode === 'off'}>
+          {fixtures.map((piece) => {
+            const px = toPx(piece.x, piece.y);
+            const wPx = piece.width * pxPerMeter;
+            const hPx = piece.height * pxPerMeter;
+            const selected = selectedFixtureId === piece.id;
+            return (
+              <Group
+                key={piece.id}
+                x={px.x}
+                y={px.y}
+                draggable={!isPlaying && !readOnly}
+                dragBoundFunc={dragBound}
+                onDragStart={() => {
+                  pushHistory();
+                  selectFixture(piece.id);
+                }}
+                onDragEnd={(e: Konva.KonvaEventObject<DragEvent>) => {
+                  const m = toMeters(e.target.x(), e.target.y());
+                  moveFixture(piece.id, m.x, m.y);
+                }}
+                onMouseDown={(e) => {
+                  e.cancelBubble = true;
+                  selectFixture(piece.id);
+                }}
+                onTouchStart={(e) => {
+                  e.cancelBubble = true;
+                  selectFixture(piece.id);
+                }}
+              >
+                <Rect
+                  x={-wPx / 2}
+                  y={-hPx / 2}
+                  width={wPx}
+                  height={hPx}
+                  fill={piece.color}
+                  opacity={0.35}
+                  stroke={piece.color}
+                  strokeWidth={2}
+                />
+                {selected && (
+                  <Rect
+                    x={-wPx / 2 - 4}
+                    y={-hPx / 2 - 4}
+                    width={wPx + 8}
+                    height={hPx + 8}
+                    stroke="#1a73e8"
+                    strokeWidth={1.5}
+                    dash={[4, 4]}
+                    listening={false}
+                  />
+                )}
+                <Text
+                  x={-wPx / 2}
+                  y={-7}
+                  width={wPx}
+                  align="center"
+                  text={piece.label}
+                  fontFamily="'Roboto Mono', monospace"
+                  fontSize={12}
+                  fill="#202124"
+                  listening={false}
+                />
+              </Group>
+            );
+          })}
+          {captions.map((piece) => {
+            const px = toPx(piece.x, piece.y);
+            const box = Math.max(48, piece.text.length * 8);
+            const selected = selectedCaptionId === piece.id;
+            return (
+              <Group
+                key={piece.id}
+                x={px.x}
+                y={px.y}
+                draggable={!isPlaying && !readOnly}
+                dragBoundFunc={dragBound}
+                onDragStart={() => {
+                  pushHistory();
+                  selectCaption(piece.id);
+                }}
+                onDragEnd={(e: Konva.KonvaEventObject<DragEvent>) => {
+                  const m = toMeters(e.target.x(), e.target.y());
+                  moveCaption(piece.id, m.x, m.y);
+                }}
+                onMouseDown={(e) => {
+                  e.cancelBubble = true;
+                  selectCaption(piece.id);
+                }}
+                onTouchStart={(e) => {
+                  e.cancelBubble = true;
+                  selectCaption(piece.id);
+                }}
+              >
+                <Rect
+                  x={-box / 2}
+                  y={-12}
+                  width={box}
+                  height={24}
+                  fill="#ffffff"
+                  opacity={0.94}
+                  cornerRadius={3}
+                  stroke={selected ? '#1a73e8' : piece.color}
+                  strokeWidth={selected ? 1.5 : 1}
+                />
+                <Text
+                  x={-box / 2}
+                  y={-7}
+                  width={box}
+                  align="center"
+                  text={piece.text}
+                  fontFamily="'Roboto Mono', monospace"
+                  fontSize={13}
+                  fill={piece.color}
+                  listening={false}
+                />
+              </Group>
+            );
+          })}
         </Layer>
 
         {/* Props: scenery footprints under the dancers. The outer group
@@ -584,7 +714,7 @@ export function StageCanvas(): ReactElement {
                     y={-hPx / 2 - 4}
                     width={wPx + 8}
                     height={hPx + 8}
-                    stroke="#e8a84c"
+                    stroke="#1a73e8"
                     strokeWidth={1.5}
                     dash={[4, 4]}
                     listening={false}
@@ -596,7 +726,7 @@ export function StageCanvas(): ReactElement {
                   width={wPx}
                   align="center"
                   text={prop.name}
-                  fontFamily="'IBM Plex Mono', monospace"
+                  fontFamily="'Roboto Mono', monospace"
                   fontSize={11}
                   fill={prop.color}
                   listening={false}
@@ -704,8 +834,8 @@ export function StageCanvas(): ReactElement {
                             x={handlePx.x}
                             y={handlePx.y}
                             radius={6}
-                            fill="#e8d44c"
-                            stroke="#191512"
+                            fill="#1a73e8"
+                            stroke="#ffffff"
                             strokeWidth={1.5}
                             draggable
                             onDragEnd={(e: Konva.KonvaEventObject<DragEvent>) => {
@@ -721,7 +851,11 @@ export function StageCanvas(): ReactElement {
             );
           })()}
 
-        <Layer listening={annotateMode === 'off' && selectedPropId === null}>
+        <Layer
+          listening={
+            annotateMode === 'off' && selectedPropId === null && selectedFixtureId === null && selectedCaptionId === null
+          }
+        >
           {performers.map((p) => {
             const pose: StagePose | undefined = livePoses?.get(p.id) ?? {
               x: editPositions[p.id]?.x ?? NaN,
@@ -846,7 +980,7 @@ export function StageCanvas(): ReactElement {
                 {selected && (
                   <Circle
                     radius={HIT_RADIUS_M * pxPerMeter}
-                    stroke="#e8a84c"
+                    stroke="#1a73e8"
                     strokeWidth={1.5}
                     dash={[4, 4]}
                   />
@@ -868,7 +1002,7 @@ export function StageCanvas(): ReactElement {
                   <>
                     <Circle
                       radius={0.32 * pxPerMeter}
-                      fill="#191512"
+                      fill="#ffffff"
                       stroke={p.color}
                       strokeWidth={2.5}
                     />
@@ -881,7 +1015,7 @@ export function StageCanvas(): ReactElement {
                       verticalAlign="middle"
                       text={p.badge ?? ''}
                       fontStyle="bold"
-                      fontFamily="'Instrument Sans Variable', sans-serif"
+                      fontFamily="'Roboto Variable', sans-serif"
                       fontSize={
                         (p.badge ?? '').length <= 1
                           ? 0.36 * pxPerMeter
@@ -917,9 +1051,12 @@ export function StageCanvas(): ReactElement {
                   width={120}
                   align="center"
                   text={p.name}
-                  fontFamily="'Instrument Sans Variable', sans-serif"
+                  fontFamily="'Roboto Variable', sans-serif"
                   fontSize={11}
-                  fill="#ece5db"
+                  fill="#202124"
+                  stroke="#ffffff"
+                  strokeWidth={3}
+                  fillAfterStrokeEnabled
                   listening={false}
                 />
               </Group>
@@ -978,7 +1115,7 @@ export function StageCanvas(): ReactElement {
                       x={8}
                       y={-7}
                       text={a.text ?? ''}
-                      fontFamily="'IBM Plex Mono', monospace"
+                      fontFamily="'Roboto Mono', monospace"
                       fontSize={12}
                       fill={a.color}
                     />
@@ -1063,7 +1200,7 @@ export function StageCanvas(): ReactElement {
                   const px = toPx(stop.pos.x, stop.pos.y);
                   return (
                     <Group key={`stop-${stop.formationId}`} x={px.x} y={px.y}>
-                      <Circle radius={9} fill="#191512" stroke={walker.color} strokeWidth={1.5} />
+                      <Circle radius={9} fill="#ffffff" stroke={walker.color} strokeWidth={1.5} />
                       <Text
                         x={-9}
                         y={-9}
@@ -1072,9 +1209,9 @@ export function StageCanvas(): ReactElement {
                         align="center"
                         verticalAlign="middle"
                         text={String(i + 1)}
-                        fontFamily="'IBM Plex Mono', monospace"
+                        fontFamily="'Roboto Mono', monospace"
                         fontSize={10}
-                        fill="#ece5db"
+                        fill="#202124"
                       />
                     </Group>
                   );
@@ -1091,8 +1228,8 @@ export function StageCanvas(): ReactElement {
               y={Math.min(marquee.y0, marquee.y1)}
               width={Math.abs(marquee.x1 - marquee.x0)}
               height={Math.abs(marquee.y1 - marquee.y0)}
-              fill="rgba(232, 168, 76, 0.08)"
-              stroke="#e8a84c"
+              fill="rgba(26, 115, 232, 0.12)"
+                    stroke="#1a73e8"
               strokeWidth={1}
               dash={[4, 4]}
             />
@@ -1107,12 +1244,12 @@ export function StageCanvas(): ReactElement {
               const px = toPx(peer.cursor.x, peer.cursor.y);
               return (
                 <Group key={peer.clientId} x={px.x} y={px.y}>
-                  <Circle radius={4} fill={peer.color} stroke="#191512" strokeWidth={1} />
+                  <Circle radius={4} fill={peer.color} stroke="#ffffff" strokeWidth={1} />
                   <Text
                     x={7}
                     y={-5}
                     text={peer.name}
-                    fontFamily="'Instrument Sans Variable', sans-serif"
+                    fontFamily="'Roboto Variable', sans-serif"
                     fontSize={10}
                     fill={peer.color}
                   />

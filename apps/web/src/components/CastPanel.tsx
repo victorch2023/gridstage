@@ -167,8 +167,8 @@ export function CastPanel(): ReactElement {
           </div>
         ))}
       </div>
-      <div className="panel-title expert-only-ui">{t.props.title}</div>
-      <div className="panel-section expert-only-ui">
+      <div className="panel-title">{t.props.title}</div>
+      <div className="panel-section">
         <button
           type="button"
           className="btn"
@@ -179,7 +179,7 @@ export function CastPanel(): ReactElement {
         </button>
       </div>
       {props.length > 0 && (
-        <div role="listbox" aria-label={t.props.listAria} className="expert-only-ui">
+        <div role="listbox" aria-label={t.props.listAria}>
           {props.map((prop) => {
             const selected = selectedPropId === prop.id;
             const glyph = prop.kind === 'circle' ? '●' : prop.kind === 'triangle' ? '▲' : '■';

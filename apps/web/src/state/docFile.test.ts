@@ -51,6 +51,8 @@ describe('parseDocFile', () => {
     expect(parsed?.props).toEqual([]);
     expect(parsed?.comments).toEqual([]);
     expect(parsed?.annotations).toEqual([]);
+    expect(parsed?.fixtures).toEqual([]);
+    expect(parsed?.captions).toEqual([]);
     expect(parsed?.performance.sections).toEqual([]);
     expect(parsed?.performance.countSegments).toEqual([]);
   });
