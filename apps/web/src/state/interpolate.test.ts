@@ -5,6 +5,7 @@ import {
   eightCountMarks,
   formatEightCount,
   formatTimecode,
+  timeRulerTicks,
   lerpAngle,
   posesAtTime,
   showEndMs,
@@ -160,6 +161,27 @@ describe('snapToFormationEdges', () => {
 
   it('handles no formations', () => {
     expect(snapToFormationEdges(1234, [], 100)).toBe(1234);
+  });
+});
+
+describe('timeRulerTicks', () => {
+  it('labels every 2s when a second is about 33px wide', () => {
+    const ticks = timeRulerTicks(30_000, 1000);
+    const labels = ticks.filter((tick) => tick.label !== null).map((tick) => tick.label);
+    expect(labels.slice(0, 4)).toEqual(['0s', '2s', '4s', '6s']);
+    expect(ticks.some((tick) => !tick.major && tick.ms === 1000)).toBe(true);
+  });
+
+  it('switches to minutes once the marks pass a minute', () => {
+    const ticks = timeRulerTicks(180_000, 900);
+    const labels = ticks.filter((tick) => tick.label !== null).map((tick) => tick.label);
+    expect(labels).toContain('0s');
+    expect(labels).toContain('1:00');
+    expect(labels).toContain('1:30');
+  });
+
+  it('returns nothing for an empty span', () => {
+    expect(timeRulerTicks(0, 800)).toEqual([]);
   });
 });
 

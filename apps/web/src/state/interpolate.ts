@@ -99,6 +99,45 @@ export function showEndMs(formations: readonly Formation[]): number {
   return last === undefined ? 0 : last.startTimeMs + last.durationMs;
 }
 
+export interface RulerTick {
+  ms: number;
+  major: boolean;
+  /** Set on the labelled ticks only. */
+  label: string | null;
+}
+
+/**
+ * Tick marks for the timeline ruler. Major ticks stay at least ~64px apart
+ * so the labels (0s, 5s, 1:00) remain readable as the user zooms.
+ */
+export function timeRulerTicks(totalMs: number, widthPx: number): RulerTick[] {
+  if (!(totalMs > 0) || !(widthPx > 0)) return [];
+  const pxPerSec = widthPx / (totalMs / 1000);
+  const stepsSec = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600];
+  const majorSec = stepsSec.find((step) => step * pxPerSec >= 64) ?? 600;
+  const minorSec =
+    majorSec >= 60 ? majorSec / 6 : majorSec >= 10 ? majorSec / 5 : majorSec > 1 ? majorSec / 2 : 1;
+  const majorMs = majorSec * 1000;
+  const minorMs = minorSec * 1000;
+  const ticks: RulerTick[] = [];
+  const count = Math.floor(totalMs / minorMs);
+  for (let i = 0; i <= count; i++) {
+    const ms = i * minorMs;
+    if (ms > totalMs) break;
+    const major = ms % majorMs === 0;
+    ticks.push({ ms, major, label: major ? rulerLabel(ms) : null });
+  }
+  return ticks;
+}
+
+function rulerLabel(ms: number): string {
+  const totalSec = Math.round(ms / 1000);
+  if (totalSec < 60) return `${totalSec}s`;
+  const minutes = Math.floor(totalSec / 60);
+  const seconds = totalSec % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
 /** "m:ss.t" — timeline and topbar timecode. */
 export function formatTimecode(ms: number): string {
   const clamped = Math.max(0, ms);

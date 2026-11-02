@@ -8,6 +8,7 @@ import {
   eightCountMarks,
   showEndMs,
   snapToFormationEdges,
+  timeRulerTicks,
 } from '../state/interpolate';
 import { audioDurationMs, getAudioElement, getWaveformPeaks } from '../audio/audioPlayer';
 import { useRefVideo } from '../state/refVideo';
@@ -341,8 +342,11 @@ export function Timeline({
   const ordered = byOrder(formations);
   const eightMarks = bpm !== null ? eightCountMarks(totalMs, bpm, countSegments) : [];
 
+  const rulerTicks = timeRulerTicks(totalMs, contentWidth);
+
   return (
     <section className="timeline-panel" aria-label={t.timeline.panelAria}>
+      <h2 className="timeline-heading">{t.timeline.panelAria}</h2>
       <div className="timeline-toolbar">
         <button type="button" className="btn edit-only" onClick={addFormation}>
           {t.timeline.addFormation}
@@ -502,9 +506,20 @@ export function Timeline({
           {/* waveform */}
           <canvas
             ref={waveformRef}
-            height={70}
-            style={{ position: 'absolute', left: 0, top: 36, width: '100%', height: 70 }}
+            height={52}
+            style={{ position: 'absolute', left: 0, top: 16, width: '100%', height: 52 }}
           />
+          <div className="timeline-ruler" aria-hidden="true">
+            {rulerTicks.map((tick) => (
+              <div
+                key={tick.ms}
+                className={`timeline-tick${tick.major ? ' major' : ''}`}
+                style={{ left: msToPx(tick.ms) }}
+              >
+                {tick.label !== null && <span className="timeline-tick-label">{tick.label}</span>}
+              </div>
+            ))}
+          </div>
           {/* 8-count ruler — marks restart per count segment */}
           {eightMarks.map((mark, i) => (
             <div
