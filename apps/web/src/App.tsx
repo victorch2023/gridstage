@@ -1,7 +1,12 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { startCollab } from './collab/collab';
-import { HostUnconfiguredError, openHostedShare, ShareLinkRevokedError, useHosted } from './host/session';
+import {
+  HostUnconfiguredError,
+  openHostedShare,
+  ShareLinkRevokedError,
+  useHosted,
+} from './host/session';
 import { useReadOnly } from './state/viewMode';
 
 // three.js is heavy — load it only when someone opens the 3D preview.

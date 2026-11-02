@@ -21,7 +21,11 @@ export interface NoticeLog {
 
 const KEY = 'gridstage-expiry-notices';
 
-export function noticeDue(expiresAtMs: number, now: number, log: NoticeLog | null): NoticeSlot | null {
+export function noticeDue(
+  expiresAtMs: number,
+  now: number,
+  log: NoticeLog | null,
+): NoticeSlot | null {
   const remaining = expiresAtMs - now;
   if (remaining <= 0 || remaining > FIRST_NOTICE_REMAINING_MS) return null;
   const current =

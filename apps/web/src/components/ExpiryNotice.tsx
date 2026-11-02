@@ -57,8 +57,7 @@ export function ExpiryNotice(): ReactElement | null {
 
   const when = new Date(expiresAtMs).toLocaleString(t.dateLocale);
   const days = Math.max(1, Math.ceil((expiresAtMs - Date.now()) / (24 * 60 * 60 * 1000)));
-  const body =
-    slot === 'final' ? t.host.expiryFinal(days, when) : t.host.expiryBody(days, when);
+  const body = slot === 'final' ? t.host.expiryFinal(days, when) : t.host.expiryBody(days, when);
 
   const closeNoted = (): void => {
     if (renewed.current) {
@@ -108,7 +107,12 @@ export function ExpiryNotice(): ReactElement | null {
           </label>
         )}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button type="button" className="btn" disabled={busy} onClick={() => dialogRef.current?.close()}>
+          <button
+            type="button"
+            className="btn"
+            disabled={busy}
+            onClick={() => dialogRef.current?.close()}
+          >
             {t.host.expiryLetEnd}
           </button>
           {picking ? (

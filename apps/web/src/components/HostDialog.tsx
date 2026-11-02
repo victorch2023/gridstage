@@ -275,9 +275,7 @@ export function HostDialog(): ReactElement | null {
           )}
           {configured === true && (userEmail !== null || anonymous) && (
             <>
-              {userEmail !== null && (
-                <p className="empty-note">{t.host.signedInAs(userEmail)}</p>
-              )}
+              {userEmail !== null && <p className="empty-note">{t.host.signedInAs(userEmail)}</p>}
               {anonymous && (
                 <p className="empty-note">
                   {hosted.linkRevoked
@@ -296,7 +294,9 @@ export function HostDialog(): ReactElement | null {
                   <p className="empty-note">{t.host.offerLead}</p>
                   {offers.map((invite) => (
                     <div key={invite.shareId}>
-                      <p className="empty-note">{t.host.offerBody(invite.title, invite.fromEmail)}</p>
+                      <p className="empty-note">
+                        {t.host.offerBody(invite.title, invite.fromEmail)}
+                      </p>
                       <button
                         type="button"
                         className="btn btn-primary"
@@ -404,7 +404,9 @@ export function HostDialog(): ReactElement | null {
                     <>
                       <p className="empty-note">{t.host.transferHint}</p>
                       {hosted.pendingOwnerEmail !== null && (
-                        <p className="empty-note">{t.host.transferPending(hosted.pendingOwnerEmail)}</p>
+                        <p className="empty-note">
+                          {t.host.transferPending(hosted.pendingOwnerEmail)}
+                        </p>
                       )}
                       <label className="field">
                         {t.host.transferEmail}
@@ -420,7 +422,12 @@ export function HostDialog(): ReactElement | null {
                           {t.host.transferSend}
                         </button>
                         {hosted.pendingOwnerEmail !== null && (
-                          <button type="button" className="btn" disabled={busy} onClick={onCancelOffer}>
+                          <button
+                            type="button"
+                            className="btn"
+                            disabled={busy}
+                            onClick={onCancelOffer}
+                          >
                             {t.host.transferCancel}
                           </button>
                         )}

@@ -66,7 +66,11 @@ function newLinkKey(): string {
   return `${crypto.randomUUID()}${crypto.randomUUID()}`.replace(/-/g, '');
 }
 
-async function readOrCreateKey(db: Firestore, shareId: string, kind: 'edit' | 'view'): Promise<string> {
+async function readOrCreateKey(
+  db: Firestore,
+  shareId: string,
+  kind: 'edit' | 'view',
+): Promise<string> {
   const ref = doc(db, 'shares', shareId, 'gate', kind);
   const existing = await getDoc(ref);
   const stored = existing.data()?.['key'];
