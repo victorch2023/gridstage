@@ -12,19 +12,30 @@ import {
 } from '../host/firebase';
 import {
   publishCurrentDoc,
+  refreshCurrentShareLinks,
   renewCurrentShare,
   sharePageUrl,
+  shareReadUrl,
   useHosted,
   withdrawCurrentShare,
 } from '../host/session';
 import { SHARE_DURATIONS_DAYS } from '../host/shareRemote';
 import type { ShareDurationDays } from '../host/shareRemote';
 import { ShareAudioTooLargeError } from '../host/pack';
+import {
+  acceptOwnership,
+  cancelOwnershipOffer,
+  offerOwnership,
+  refreshOwnershipOffers,
+  TransferEmailError,
+  useOwnershipOffers,
+} from '../host/transfer';
+import { useEditor } from '../state/store';
 import { useReadOnly } from '../state/viewMode';
 
 /**
- * Publish the open choreography to the Spark Firestore project for a fixed
- * term. The signed-in account can keep editing; the link is read-only.
+ * Publish the open choreography for a fixed term. The owner gets an edit
+ * link and a view-only link, and can offer the project to another email.
  */
 export function HostDialog(): ReactElement | null {
   const t = useT();
@@ -37,17 +48,21 @@ export function HostDialog(): ReactElement | null {
   const [password, setPassword] = useState('');
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userUid, setUserUid] = useState<string | null>(null);
+  const [anonymous, setAnonymous] = useState(false);
   const [duration, setDuration] = useState<ShareDurationDays>(30);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState('');
   const [note, setNote] = useState('');
-  const [link, setLink] = useState('');
+  const [transferEmail, setTransferEmail] = useState('');
+  const projectTitle = useEditor((s) => s.performance.title);
+  const offers = useOwnershipOffers((s) => s.pending);
 
   useEffect(() => {
     void loadFirebaseConfig().then((config) => setConfigured(config !== null));
     return watchAuth((user) => {
       setUserEmail(user?.email ?? null);
       setUserUid(user?.uid ?? null);
+      setAnonymous(user?.isAnonymous === true);
     });
   }, []);
 
@@ -91,8 +106,7 @@ export function HostDialog(): ReactElement | null {
     void publishCurrentDoc(duration, (done, total) => {
       if (total > 0) setProgress(t.host.progress(done, total));
     }).then(
-      (url) => {
-        setLink(url);
+      () => {
         setNote(t.host.saved);
         setBusy(false);
         setProgress('');
@@ -107,8 +121,81 @@ export function HostDialog(): ReactElement | null {
     );
   };
 
-  const shownLink =
-    link !== '' ? link : hosted.shareId !== null && isEditor ? sharePageUrl(hosted.shareId) : '';
+  const linkId = hosted.shareId;
+  const showLinks = linkId !== null && (isEditor || hosted.canEdit);
+  const editUrl = showLinks && linkId !== null ? sharePageUrl(linkId, hosted.editKey) : '';
+  const readUrl =
+    showLinks &&
+    linkId !== null &&
+    (!hosted.accessLocked || (hosted.viewKey !== null && hosted.viewKey !== ''))
+      ? shareReadUrl(linkId, hosted.viewKey)
+      : '';
+  const expiresLabel =
+    hosted.expiresAtMs === null ? '' : new Date(hosted.expiresAtMs).toLocaleString(t.dateLocale);
+
+  const copyText = (value: string, ok: string): void => {
+    void navigator.clipboard.writeText(value).then(
+      () => setNote(ok),
+      () => setNote(value),
+    );
+  };
+
+  const onOffer = (): void => {
+    if (hosted.shareId === null) return;
+    setBusy(true);
+    setNote('');
+    void offerOwnership({
+      shareId: hosted.shareId,
+      toEmail: transferEmail,
+      title: projectTitle,
+    }).then(
+      (email) => {
+        useHosted.setState({ pendingOwnerEmail: email });
+        setNote(t.host.transferSent(email));
+        setBusy(false);
+      },
+      (error: unknown) => {
+        setBusy(false);
+        if (error instanceof TransferEmailError && error.reason === 'self') {
+          setNote(t.host.transferSelf);
+        } else if (error instanceof TransferEmailError) {
+          setNote(t.host.transferInvalid);
+        } else {
+          setNote(t.host.transferFailed);
+        }
+      },
+    );
+  };
+
+  const onCancelOffer = (): void => {
+    if (hosted.shareId === null || hosted.pendingOwnerEmail === null) return;
+    setBusy(true);
+    void cancelOwnershipOffer(hosted.shareId, hosted.pendingOwnerEmail).then(
+      () => {
+        useHosted.setState({ pendingOwnerEmail: null });
+        setNote(t.host.transferCancelled);
+        setBusy(false);
+      },
+      () => {
+        setNote(t.host.transferFailed);
+        setBusy(false);
+      },
+    );
+  };
+
+  const onAcceptOffer = (shareId: string): void => {
+    setBusy(true);
+    void acceptOwnership(shareId).then(
+      () => {
+        window.location.assign(sharePageUrl(shareId));
+      },
+      () => {
+        setBusy(false);
+        setNote(t.host.offerFailed);
+        void refreshOwnershipOffers();
+      },
+    );
+  };
 
   return (
     <>
@@ -118,7 +205,7 @@ export function HostDialog(): ReactElement | null {
         title={t.host.openTitle}
         onClick={() => dialogRef.current?.showModal()}
       >
-        {readOnly ? t.host.signInToEdit : t.host.open}
+        {readOnly && !isEditor && !anonymous ? t.host.signInToEdit : t.host.open}
       </button>
       <dialog ref={dialogRef} className="export-dialog host-dialog" aria-label={t.host.title}>
         <div className="export-dialog-head">
@@ -131,7 +218,7 @@ export function HostDialog(): ReactElement | null {
         </div>
         <div className="host-dialog-body">
           {configured === false && <p className="empty-note">{t.host.setup}</p>}
-          {configured === true && userEmail === null && (
+          {configured === true && userEmail === null && !anonymous && (
             <form
               onSubmit={(event) => onAuth(event, 'in')}
               style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
@@ -186,11 +273,47 @@ export function HostDialog(): ReactElement | null {
               </div>
             </form>
           )}
-          {configured === true && userEmail !== null && (
+          {configured === true && (userEmail !== null || anonymous) && (
             <>
-              <p className="empty-note">{t.host.signedInAs(userEmail)}</p>
-              {hosted.editorUid !== null && !isEditor && (
+              {userEmail !== null && (
+                <p className="empty-note">{t.host.signedInAs(userEmail)}</p>
+              )}
+              {anonymous && (
+                <p className="empty-note">
+                  {hosted.linkRevoked
+                    ? t.host.linkRevoked
+                    : hosted.canEdit
+                      ? t.host.guestEditor
+                      : t.host.guestViewer}
+                </p>
+              )}
+              {hosted.handedOff && <p className="empty-note">{t.host.handedOff}</p>}
+              {hosted.linkRevoked && userEmail !== null && (
+                <p className="empty-note">{t.host.linkRevoked}</p>
+              )}
+              {offers.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <p className="empty-note">{t.host.offerLead}</p>
+                  {offers.map((invite) => (
+                    <div key={invite.shareId}>
+                      <p className="empty-note">{t.host.offerBody(invite.title, invite.fromEmail)}</p>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        disabled={busy}
+                        onClick={() => onAcceptOffer(invite.shareId)}
+                      >
+                        {t.host.offerAccept}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {hosted.editorUid !== null && !isEditor && !hosted.canEdit && (
                 <p className="empty-note">{t.host.notEditor}</p>
+              )}
+              {hosted.canEdit && !isEditor && !anonymous && (
+                <p className="empty-note">{t.host.editLinkKeeps}</p>
               )}
               {(hosted.editorUid === null || isEditor) && (
                 <>
@@ -246,7 +369,6 @@ export function HostDialog(): ReactElement | null {
                           setBusy(true);
                           void withdrawCurrentShare().then(
                             () => {
-                              setLink('');
                               setNote(t.host.withdrawn);
                               setBusy(false);
                             },
@@ -278,34 +400,104 @@ export function HostDialog(): ReactElement | null {
                   {hosted.canEdit && hosted.saveState === 'error' && (
                     <p className="empty-note">{t.host.publishFailed}</p>
                   )}
+                  {isEditor && editUrl !== '' && (
+                    <>
+                      <p className="empty-note">{t.host.transferHint}</p>
+                      {hosted.pendingOwnerEmail !== null && (
+                        <p className="empty-note">{t.host.transferPending(hosted.pendingOwnerEmail)}</p>
+                      )}
+                      <label className="field">
+                        {t.host.transferEmail}
+                        <input
+                          type="email"
+                          autoComplete="off"
+                          value={transferEmail}
+                          onChange={(event) => setTransferEmail(event.target.value)}
+                        />
+                      </label>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <button type="button" className="btn" disabled={busy} onClick={onOffer}>
+                          {t.host.transferSend}
+                        </button>
+                        {hosted.pendingOwnerEmail !== null && (
+                          <button type="button" className="btn" disabled={busy} onClick={onCancelOffer}>
+                            {t.host.transferCancel}
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </>
               )}
-              {shownLink !== '' && (
-                <label className="field">
-                  {t.host.readLink}
-                  <input
-                    type="text"
-                    readOnly
-                    value={shownLink}
-                    onFocus={(event) => event.target.select()}
-                  />
-                </label>
+              {editUrl !== '' && (
+                <>
+                  {expiresLabel !== '' && (
+                    <p className="empty-note">{t.host.expiresOn(expiresLabel)}</p>
+                  )}
+                  <label className="field">
+                    {t.host.editLink}
+                    <input
+                      type="text"
+                      readOnly
+                      value={editUrl}
+                      onFocus={(event) => event.target.select()}
+                    />
+                  </label>
+                  <p className="empty-note">{t.host.editLinkHint}</p>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => copyText(editUrl, t.host.copiedEdit)}
+                  >
+                    {t.host.copyEdit}
+                  </button>
+                  {readUrl !== '' && (
+                    <>
+                      <label className="field">
+                        {t.host.readLink}
+                        <input
+                          type="text"
+                          readOnly
+                          value={readUrl}
+                          onFocus={(event) => event.target.select()}
+                        />
+                      </label>
+                      <p className="empty-note">{t.host.readLinkHint}</p>
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => copyText(readUrl, t.host.copiedRead)}
+                      >
+                        {t.host.copyRead}
+                      </button>
+                    </>
+                  )}
+                  {isEditor && (
+                    <button
+                      type="button"
+                      className="btn"
+                      disabled={busy}
+                      onClick={() => {
+                        if (!window.confirm(t.host.refreshLinksConfirm)) return;
+                        setBusy(true);
+                        setNote('');
+                        void refreshCurrentShareLinks().then(
+                          () => {
+                            setNote(t.host.refreshLinksDone);
+                            setBusy(false);
+                          },
+                          () => {
+                            setNote(t.host.publishFailed);
+                            setBusy(false);
+                          },
+                        );
+                      }}
+                    >
+                      {t.host.refreshLinks}
+                    </button>
+                  )}
+                </>
               )}
-              {shownLink !== '' && (
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => {
-                    void navigator.clipboard.writeText(shownLink).then(
-                      () => setNote(t.host.copied),
-                      () => setNote(shownLink),
-                    );
-                  }}
-                >
-                  {t.host.copy}
-                </button>
-              )}
-              {isEditor && shownLink !== '' && <p className="empty-note">{t.host.editorNote}</p>}
             </>
           )}
           {progress !== '' && <p className="empty-note">{progress}</p>}

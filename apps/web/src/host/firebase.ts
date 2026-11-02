@@ -5,6 +5,7 @@ import {
   getAuth,
   onAuthStateChanged,
   sendPasswordResetEmail,
+  signInAnonymously,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
@@ -145,6 +146,16 @@ export async function signUpWithEmail(email: string, password: string): Promise<
   if (auth === null) throw new Error('unconfigured');
   const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
   await saveAccount(credential.user);
+}
+
+/** A guest on an edit or view link. This is not an email account. */
+export async function ensureGuestUser(): Promise<User | null> {
+  const existing = await waitForAuth();
+  if (existing !== null) return existing;
+  const auth = await hostingAuth();
+  if (auth === null) return null;
+  const credential = await signInAnonymously(auth);
+  return credential.user;
 }
 
 export async function signInWithEmail(email: string, password: string): Promise<void> {

@@ -53,7 +53,8 @@ export const en = {
 
   host: {
     open: 'Publish',
-    openTitle: 'Host this choreography online for a limited time. The link is view-only.',
+    openTitle:
+      'Host this choreography online for a limited time. You get an edit link and a view-only link.',
     title: 'Publish for the cast',
     close: 'Close',
     setup:
@@ -80,10 +81,60 @@ export const en = {
     withdrawn: 'The link is down.',
     working: 'Uploading…',
     progress: (done: number, total: number): string => `Uploading ${done} / ${total}`,
-    readLink: 'Link for the cast (view only)',
+    editLink: 'Edit link',
+    editLinkHint:
+      'Anyone who opens this link can edit, with no account. That includes someone who just transferred ownership.',
+    editLinkKeeps: 'You can edit because you opened the edit link. Another account owns the project.',
+    guestEditor: 'You are editing from the link. No account is required.',
+    guestViewer: 'You are viewing from the view-only link. No account is required.',
+    readLink: 'View-only link (share with everyone)',
+    readLinkHint:
+      'Nobody can edit from this link, including the owner. After the owner refreshes the links, this one stops working.',
     copy: 'Copy',
+    copyEdit: 'Copy edit link',
+    copyRead: 'Copy view-only link',
     copied: 'Link copied',
-    editorNote: 'This account can keep editing. Everyone else can only view.',
+    copiedEdit: 'Edit link copied',
+    copiedRead: 'View-only link copied',
+    expiresOn: (when: string): string => `Online until ${when}`,
+    expiryTitle: 'This project is about to expire',
+    expiryBody: (days: number, when: string): string =>
+      days <= 1
+        ? `Less than a day left. It goes offline on ${when}. Is it all right for it to expire, or do you want another term?`
+        : `${days} days left. It goes offline on ${when}. Is it all right for it to expire, or do you want another term?`,
+    expiryFinal: (days: number, when: string): string =>
+      days <= 1
+        ? `Second reminder. Less than a day left. It goes offline on ${when}. Let it expire, or set another term?`
+        : `Second reminder. ${days} days left. It goes offline on ${when}. Let it expire, or set another term?`,
+    expiryLetEnd: 'Let it expire',
+    expiryExtend: 'Set another term',
+    expiryApply: 'Apply the new term',
+    expiryFailed: 'Could not update the term.',
+    transferHint:
+      'Offer ownership to another email. This site does not send that message. They open GridStage, sign in or create an account with that address, and press Accept ownership.',
+    transferEmail: 'Their email',
+    transferSend: 'Offer ownership',
+    transferPending: (email: string): string => `Waiting for ${email} to accept.`,
+    transferCancel: 'Cancel the offer',
+    transferCancelled: 'The offer was cancelled.',
+    transferSent: (email: string): string => `Ownership offered to ${email}.`,
+    transferSelf: 'That email is this account.',
+    transferInvalid: 'Enter a valid email.',
+    transferFailed: 'Could not offer ownership.',
+    offerTitle: 'You were offered a project',
+    offerLead: 'Accept to become the owner. You can then edit it and share the view-only link.',
+    offerBody: (title: string, from: string): string => `${from} wants you to own “${title}”.`,
+    offerAccept: 'Accept ownership',
+    offerLater: 'Not now',
+    offerFailed: 'Could not accept ownership.',
+    handedOff: 'This account no longer owns the project.',
+    linkRevoked: 'The owner refreshed the links. This one no longer opens the project. Ask for the new link.',
+    refreshLinks: 'Refresh links',
+    refreshLinksConfirm:
+      'Refresh the edit link and the view-only link? Links you already shared will stop opening the project.',
+    refreshLinksDone: 'New links. The previous ones no longer work.',
+    editorNote:
+      'The edit link can edit, with no account. The view-only link cannot, including the owner. The owner can refresh both.',
     audioNote: 'The music uploads with the plan. A stage photo stays on this device.',
     audioTooBig: 'The audio is over 40 MB. Export the songs as MP3 and try again.',
     saved: 'Published. Edits upload a couple of seconds after you stop.',

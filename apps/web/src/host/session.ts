@@ -1,3 +1,4 @@
+import { getAuth } from 'firebase/auth';
 import { create } from 'zustand';
 import {
   deleteAudioForDoc,
@@ -9,17 +10,30 @@ import { saveActiveDoc } from '../state/library';
 import { useEditor } from '../state/store';
 import type { DocState } from '../state/store';
 import { useReadOnly } from '../state/viewMode';
-import { loadFirebaseConfig, waitForAuth } from './firebase';
+import { ensureGuestUser, firebaseErrorCode, loadFirebaseConfig, waitForAuth } from './firebase';
 import {
   HostUnconfiguredError,
   publishShare,
   renewShare,
   saveHostedEdits,
+  ShareLinkRevokedError,
   ShareUnavailableError,
   withdrawShare,
 } from './shareRemote';
 import { loadShare } from './shareRemote';
 import type { PublishedShare, ShareDurationDays } from './shareRemote';
+import { cancelOwnershipOffer } from './transfer';
+import {
+  claimEditAccess,
+  claimViewAccess,
+  deleteEditAccess,
+  ensureOwnerLinks,
+  forgetEditKey,
+  lockShareAccess,
+  rememberedEditKey,
+  rememberedViewKey,
+  refreshShareLinks,
+} from './editAccess';
 
 const MEMORY_KEY = 'gridstage-hosted-shares';
 const SAVE_DELAY_MS = 2000;
@@ -31,6 +45,14 @@ export interface HostedState {
   performanceId: string | null;
   docParts: number;
   audioParts: number;
+  pendingOwnerEmail: string | null;
+  editKey: string | null;
+  viewKey: string | null;
+  accessLocked: boolean;
+  /** The signed-in account lost editorUid, usually because ownership moved. */
+  handedOff: boolean;
+  /** The owner refreshed the links, so this browser's key no longer writes. */
+  linkRevoked: boolean;
   canEdit: boolean;
   saveState: 'idle' | 'saving' | 'saved' | 'error';
 }
@@ -42,6 +64,12 @@ export const useHosted = create<HostedState>(() => ({
   performanceId: null,
   docParts: 0,
   audioParts: 0,
+  pendingOwnerEmail: null,
+  editKey: null,
+  viewKey: null,
+  accessLocked: false,
+  handedOff: false,
+  linkRevoked: false,
   canEdit: false,
   saveState: 'idle',
 }));
@@ -75,12 +103,30 @@ export function forgetShare(performanceId: string): void {
   localStorage.setItem(MEMORY_KEY, JSON.stringify(map));
 }
 
-export function sharePageUrl(shareId: string): string {
+export function sharePageUrl(shareId: string, editKey?: string | null): string {
   const url = new URL(window.location.href);
   url.search = '';
   url.hash = '';
   url.searchParams.set('share', shareId);
+  if (editKey !== undefined && editKey !== null && editKey !== '') url.searchParams.set('key', editKey);
   return url.toString();
+}
+
+/** View-only. The edit key is never included. mode=view hides editing for everyone. */
+export function shareReadUrl(shareId: string, viewKey?: string | null): string {
+  const url = new URL(window.location.href);
+  url.search = '';
+  url.hash = '';
+  url.searchParams.set('share', shareId);
+  url.searchParams.set('mode', 'view');
+  if (viewKey !== undefined && viewKey !== null && viewKey !== '') {
+    url.searchParams.set('viewKey', viewKey);
+  }
+  return url.toString();
+}
+
+function viewLinkLocksEdit(): boolean {
+  return new URLSearchParams(window.location.search).get('mode') === 'view';
 }
 
 function currentDoc(): DocState {
@@ -181,8 +227,22 @@ async function pushEdits(): Promise<void> {
       audioParts: published.audioParts,
       expiresAtMs: published.expiresAtMs,
     });
-  } catch {
-    useHosted.setState({ saveState: 'error' });
+  } catch (error) {
+    const expired = hosted.expiresAtMs !== null && hosted.expiresAtMs <= Date.now();
+    if (firebaseErrorCode(error) === 'permission-denied' && !expired) {
+      unbindHostedSession();
+      const uid = getAuth().currentUser?.uid;
+      const revoked = uid !== undefined && hosted.editorUid !== null && uid !== hosted.editorUid;
+      if (revoked) {
+        useReadOnly.getState().setHostedReadOnly(true);
+        useHosted.setState({ linkRevoked: true, canEdit: false, saveState: 'idle' });
+      } else {
+        useHosted.setState({ handedOff: true, saveState: 'idle' });
+      }
+      return;
+    }
+    if (firebaseErrorCode(error) === 'permission-denied') unbindHostedSession();
+    else useHosted.setState({ saveState: 'error' });
   }
 }
 
@@ -199,13 +259,45 @@ export async function publishCurrentDoc(
     onProgress,
   });
   rememberShare(doc.performance.id, published.shareId);
-  const url = new URL(window.location.href);
-  url.searchParams.set('share', published.shareId);
+  const links = await ensureOwnerLinks(published.shareId);
+  await lockShareAccess(published.shareId);
+  const editUrl = sharePageUrl(published.shareId, links.editKey);
+  if (viewLinkLocksEdit()) {
+    window.location.assign(editUrl);
+    return editUrl;
+  }
+  const url = new URL(editUrl);
   window.history.replaceState(null, '', url);
-  useHosted.setState({ editorUid: (await waitForAuth())?.uid ?? useHosted.getState().editorUid });
+  const previous = useHosted.getState();
+  useHosted.setState({
+    editorUid: (await waitForAuth())?.uid ?? previous.editorUid,
+    pendingOwnerEmail: previous.shareId === published.shareId ? previous.pendingOwnerEmail : null,
+    editKey: links.editKey,
+    viewKey: links.viewKey,
+    accessLocked: true,
+    linkRevoked: false,
+    handedOff: false,
+  });
   bindHostedSession(published, doc.performance.id);
   useReadOnly.getState().setHostedReadOnly(false);
-  return sharePageUrl(published.shareId);
+  return editUrl;
+}
+
+/** New edit and view links. Links already shared stop opening the project. */
+export async function refreshCurrentShareLinks(): Promise<void> {
+  const hosted = useHosted.getState();
+  if (hosted.shareId === null) return;
+  const links = await refreshShareLinks(hosted.shareId);
+  useHosted.setState({
+    editKey: links.editKey,
+    viewKey: links.viewKey,
+    accessLocked: true,
+    linkRevoked: false,
+  });
+  const next = viewLinkLocksEdit()
+    ? shareReadUrl(hosted.shareId, links.viewKey)
+    : sharePageUrl(hosted.shareId, links.editKey);
+  window.history.replaceState(null, '', new URL(next));
 }
 
 export async function renewCurrentShare(durationDays: ShareDurationDays): Promise<void> {
@@ -228,6 +320,18 @@ export async function renewCurrentShare(durationDays: ShareDurationDays): Promis
 export async function withdrawCurrentShare(): Promise<void> {
   const hosted = useHosted.getState();
   if (hosted.shareId === null) return;
+  if (hosted.pendingOwnerEmail !== null) {
+    try {
+      await cancelOwnershipOffer(hosted.shareId, hosted.pendingOwnerEmail);
+    } catch {
+      // The project is still taken down if the offer was already gone.
+    }
+  }
+  try {
+    await deleteEditAccess(hosted.shareId);
+  } catch {
+    forgetEditKey(hosted.shareId);
+  }
   await withdrawShare(hosted.shareId, hosted.docParts, hosted.audioParts);
   if (hosted.performanceId !== null) forgetShare(hosted.performanceId);
   unbindHostedSession();
@@ -238,9 +342,18 @@ export async function withdrawCurrentShare(): Promise<void> {
     performanceId: null,
     docParts: 0,
     audioParts: 0,
+    pendingOwnerEmail: null,
+    editKey: null,
+    viewKey: null,
+    accessLocked: false,
+    linkRevoked: false,
+    handedOff: false,
   });
   const url = new URL(window.location.href);
   url.searchParams.delete('share');
+  url.searchParams.delete('key');
+  url.searchParams.delete('viewKey');
+  url.searchParams.delete('mode');
   window.history.replaceState(null, '', url);
   useReadOnly.getState().setHostedReadOnly(false);
 }
@@ -253,7 +366,22 @@ export function openHostedShare(shareId: string): Promise<void> {
 
 async function loadIntoEditor(shareId: string): Promise<void> {
   if ((await loadFirebaseConfig()) === null) throw new HostUnconfiguredError();
-  const user = await waitForAuth();
+  const params = new URLSearchParams(window.location.search);
+  const viewLocked = viewLinkLocksEdit();
+  const urlEditKey = params.get('key') ?? rememberedEditKey(shareId);
+  const urlViewKey = params.get('viewKey') ?? rememberedViewKey(shareId);
+  let user = await waitForAuth();
+  const wantsEdit = !viewLocked && urlEditKey !== null && urlEditKey !== '';
+  const wantsView = urlViewKey !== null && urlViewKey !== '';
+  if (user === null && (wantsEdit || wantsView)) {
+    try {
+      user = await ensureGuestUser();
+    } catch {
+      user = null;
+    }
+  }
+  if (user !== null && wantsEdit) await claimEditAccess(shareId, urlEditKey);
+  if (user !== null && wantsView) await claimViewAccess(shareId, urlViewKey);
   const loaded = await loadShare(shareId);
   const local = useEditor.getState();
   const hasLocalWork =
@@ -277,7 +405,23 @@ async function loadIntoEditor(shareId: string): Promise<void> {
   useEditor.getState().loadDoc(loaded.doc);
   await switchAudioToDoc(loaded.doc.performance.id);
   const live = loaded.expiresAtMs > Date.now();
-  const canEdit = user !== null && user.uid === loaded.editorUid && live;
+  const isOwner = user !== null && user.uid === loaded.editorUid;
+  let editKey = urlEditKey;
+  let viewKey = urlViewKey;
+  let joined = wantsEdit && user !== null;
+  if (isOwner) {
+    try {
+      const links = await ensureOwnerLinks(shareId);
+      editKey = links.editKey;
+      viewKey = links.viewKey;
+      joined = true;
+    } catch {
+      editKey = urlEditKey;
+    }
+  } else if (user !== null && wantsEdit) {
+    joined = await claimEditAccess(shareId, urlEditKey);
+  }
+  const canEdit = user !== null && live && !viewLocked && (isOwner || joined);
   useHosted.setState({
     shareId,
     editorUid: loaded.editorUid,
@@ -285,6 +429,12 @@ async function loadIntoEditor(shareId: string): Promise<void> {
     performanceId: loaded.doc.performance.id,
     docParts: loaded.docParts,
     audioParts: loaded.audioParts,
+    pendingOwnerEmail: loaded.pendingOwnerEmail,
+    editKey,
+    viewKey,
+    accessLocked: loaded.accessLocked,
+    linkRevoked: false,
+    handedOff: false,
     canEdit: false,
     saveState: 'idle',
   });
@@ -303,4 +453,4 @@ async function loadIntoEditor(shareId: string): Promise<void> {
   }
 }
 
-export { HostUnconfiguredError, ShareUnavailableError };
+export { HostUnconfiguredError, ShareLinkRevokedError, ShareUnavailableError };

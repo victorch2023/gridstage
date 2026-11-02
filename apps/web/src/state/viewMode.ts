@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 
 /**
- * Read-only surface. `?mode=view` is a UI convenience for a live room.
- * A hosted share (`?share=`) sets the same flag for everyone except the
- * Firebase account that published it. Firestore rules are what actually
- * reject a reader's writes.
+ * Read-only surface. `?mode=view` hides editing for everyone, including the
+ * project owner — that is the link meant for the cast. A hosted share
+ * (`?share=`) is editable only by the Firebase account in editorUid, and
+ * only from the link without `mode=view`. Firestore rules reject other writes.
  */
 const urlViewLocked = new URLSearchParams(window.location.search).get('mode') === 'view';
 

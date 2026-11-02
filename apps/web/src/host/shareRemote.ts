@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { parseDocFile } from '../state/docFile';
 import type { DocState } from '../state/store';
-import { hostingDb } from './firebase';
+import { firebaseErrorCode, hostingDb } from './firebase';
 import { joinAudio, packShare } from './pack';
 
 /** Durations the rules accept (they reject anything past 185 days). */
@@ -27,6 +27,14 @@ export class ShareUnavailableError extends Error {
   }
 }
 
+/** The owner refreshed the links, or this visitor no longer has access. */
+export class ShareLinkRevokedError extends Error {
+  constructor() {
+    super('share link revoked');
+    this.name = 'ShareLinkRevokedError';
+  }
+}
+
 export class HostUnconfiguredError extends Error {
   constructor() {
     super('firebase unconfigured');
@@ -38,6 +46,8 @@ export interface LoadedShare {
   shareId: string;
   editorUid: string;
   expiresAtMs: number;
+  pendingOwnerEmail: string | null;
+  accessLocked: boolean;
   doc: DocState;
   audio: Uint8Array | null;
   audioContentType: string | null;
@@ -135,7 +145,8 @@ export async function loadShare(shareId: string): Promise<LoadedShare> {
   let snap;
   try {
     snap = await getDoc(doc(db, 'shares', shareId));
-  } catch {
+  } catch (error) {
+    if (firebaseErrorCode(error) === 'permission-denied') throw new ShareLinkRevokedError();
     throw new ShareUnavailableError();
   }
   if (!snap.exists()) throw new ShareUnavailableError();
@@ -160,10 +171,13 @@ export async function loadShare(shareId: string): Promise<LoadedShare> {
       ? null
       : joinAudio((await readPartBytes(shareId, audioParts, 'audio')) as Uint8Array[]);
   const contentType = data['audioContentType'];
+  const pendingOwnerEmail = data['pendingOwnerEmail'];
   return {
     shareId,
     editorUid,
     expiresAtMs: expiresAt.toMillis(),
+    pendingOwnerEmail: typeof pendingOwnerEmail === 'string' ? pendingOwnerEmail : null,
+    accessLocked: data['accessLocked'] === true,
     doc: parsed,
     audio,
     audioContentType: typeof contentType === 'string' ? contentType : null,

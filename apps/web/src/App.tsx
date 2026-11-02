@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { startCollab } from './collab/collab';
-import { HostUnconfiguredError, openHostedShare, ShareUnavailableError } from './host/session';
+import { HostUnconfiguredError, openHostedShare, ShareLinkRevokedError, useHosted } from './host/session';
 import { useReadOnly } from './state/viewMode';
 
 // three.js is heavy — load it only when someone opens the 3D preview.
@@ -21,6 +21,8 @@ import { useT } from './i18n';
 import { useLayout } from './state/layout';
 import { PanelResizer } from './components/PanelResizer';
 import { BackupNudge } from './components/BackupNudge';
+import { ExpiryNotice } from './components/ExpiryNotice';
+import { TransferOffer } from './components/TransferOffer';
 import { RefVideo } from './components/RefVideo';
 import { useRefVideo } from './state/refVideo';
 
@@ -31,6 +33,7 @@ export function App(): ReactElement {
     new URLSearchParams(window.location.search).get('share') ? 'loading' : 'ready',
   );
   const [hostError, setHostError] = useState('');
+  const linkRevoked = useHosted((s) => s.linkRevoked);
   useEffect(() => {
     document.documentElement.lang = t.dateLocale;
   }, [t.dateLocale]);
@@ -77,11 +80,13 @@ export function App(): ReactElement {
       },
       (error: unknown) => {
         if (cancelled) return;
+        const params = new URLSearchParams(window.location.search);
+        const hadSecret = params.has('key') || params.has('viewKey');
         setHostError(
           error instanceof HostUnconfiguredError
             ? t.host.unconfigured
-            : error instanceof ShareUnavailableError
-              ? t.host.unavailable
+            : error instanceof ShareLinkRevokedError && hadSecret
+              ? t.host.linkRevoked
               : t.host.unavailable,
         );
         setHostGate('error');
@@ -90,7 +95,7 @@ export function App(): ReactElement {
     return () => {
       cancelled = true;
     };
-  }, [t.host.unconfigured, t.host.unavailable]);
+  }, [t.host.unconfigured, t.host.unavailable, t.host.linkRevoked]);
 
   return (
     <div
@@ -217,6 +222,8 @@ export function App(): ReactElement {
         </>
       )}
       {!readOnly && <BackupNudge />}
+      <ExpiryNotice />
+      <TransferOffer />
       {hostGate === 'loading' && (
         <p className="host-gate" style={{ top: 0 }}>
           {t.host.loading}
@@ -225,6 +232,11 @@ export function App(): ReactElement {
       {hostGate === 'error' && (
         <p className="host-gate" style={{ top: 46 }} role="alert">
           {hostError}
+        </p>
+      )}
+      {hostGate === 'ready' && linkRevoked && (
+        <p className="host-gate" style={{ top: 46 }} role="alert">
+          {t.host.linkRevoked}
         </p>
       )}
       <input

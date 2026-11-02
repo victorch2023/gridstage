@@ -1,6 +1,12 @@
 rules_version = '2';
-// Spark project. Anyone with the link can read until expiresAt.
-// Only the Firebase Auth user in editorUid can write.
+// Spark project. A new or refreshed project is locked: the edit link and the
+// view link each carry a key. An older project stays readable by share id
+// until the owner refreshes. editorUid is the owner (transfer, term, refresh,
+// taking the link down). shares/{id}/members/{uid} may edit. Anyone with the
+// edit key can add themselves, including a guest without an email account.
+// shares/{id}/viewers/{uid} may only read, using the view key.
+// The owner can offer the project to an email. That person accepts by
+// signing in with the same address; rules then move editorUid.
 // Deploy: npx firebase-tools deploy --only firestore:rules
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -16,8 +22,95 @@ service cloud.firestore {
       return signedIn() && share(shareId).editorUid == request.auth.uid;
     }
 
+    function isMember(shareId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/shares/$(shareId)/members/$(request.auth.uid));
+    }
+
+    function isViewer(shareId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/shares/$(shareId)/viewers/$(request.auth.uid));
+    }
+
+    // Before the owner refreshes, the share id alone can read. After that,
+    // only a current view key, edit key, or the owner can open it.
     function publicLive(shareId) {
-      return share(shareId).ready == true && share(shareId).expiresAt > request.time;
+      return share(shareId).ready == true
+        && share(shareId).expiresAt > request.time
+        && share(shareId).accessLocked != true;
+    }
+
+    function authEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    function offer(shareId) {
+      return get(/databases/$(database)/documents/mailboxes/$(authEmail())/invites/$(shareId)).data;
+    }
+
+    function ownerKeepsShare() {
+      return signedIn()
+        && request.auth.uid == resource.data.editorUid
+        && request.resource.data.editorUid == resource.data.editorUid
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.expiresAt > request.time
+        && request.resource.data.expiresAt < request.time + duration.value(185, 'd')
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() < 200
+        && request.resource.data.docParts is int
+        && request.resource.data.audioParts is int
+        && request.resource.data.docParts >= 1
+        && request.resource.data.docParts < 80
+        && request.resource.data.audioParts >= 0
+        && request.resource.data.audioParts < 80
+        && request.resource.size() < 20000;
+    }
+
+    // The invited account becomes the editor. Nothing else on the project moves.
+    function recipientAcceptsShare(shareId) {
+      return signedIn()
+        && request.auth.token.email is string
+        && exists(/databases/$(database)/documents/mailboxes/$(authEmail())/invites/$(shareId))
+        && offer(shareId).status == 'pending'
+        && offer(shareId).toEmail == authEmail()
+        && offer(shareId).shareId == shareId
+        && request.resource.data.editorUid == request.auth.uid
+        && request.resource.data.pendingOwnerEmail == null
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.expiresAt == resource.data.expiresAt
+        && request.resource.data.title == resource.data.title
+        && request.resource.data.docParts == resource.data.docParts
+        && request.resource.data.audioParts == resource.data.audioParts
+        && request.resource.data.ready == resource.data.ready
+        && request.resource.data.updatedAt is timestamp
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['editorUid', 'pendingOwnerEmail', 'updatedAt'])
+        && request.resource.size() < 20000;
+    }
+
+    // An editor who is not the owner may change the choreography only.
+    function memberEditsShare(shareId) {
+      return isMember(shareId)
+        && request.resource.data.editorUid == resource.data.editorUid
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.expiresAt == resource.data.expiresAt
+        && request.resource.data.pendingOwnerEmail == resource.data.pendingOwnerEmail
+        && request.resource.data.ready == resource.data.ready
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() < 200
+        && request.resource.data.docParts is int
+        && request.resource.data.audioParts is int
+        && request.resource.data.docParts >= 1
+        && request.resource.data.docParts < 80
+        && request.resource.data.audioParts >= 0
+        && request.resource.data.audioParts < 80
+        && request.resource.data.updatedAt is timestamp
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['title', 'performanceId', 'updatedAt', 'docParts', 'audioParts', 'audioContentType', 'ready'])
+        && request.resource.size() < 20000;
     }
 
     match /accounts/{uid} {
@@ -43,8 +136,12 @@ service cloud.firestore {
     }
 
     match /shares/{shareId} {
-      allow get: if (resource.data.ready == true && resource.data.expiresAt > request.time)
-        || (signedIn() && request.auth.uid == resource.data.editorUid);
+      allow get: if (resource.data.ready == true
+          && resource.data.expiresAt > request.time
+          && resource.data.accessLocked != true)
+        || (signedIn() && request.auth.uid == resource.data.editorUid)
+        || isMember(shareId)
+        || isViewer(shareId);
       allow list: if false;
 
       allow create: if signedIn()
@@ -65,37 +162,111 @@ service cloud.firestore {
         && request.resource.data.audioParts < 80
         && request.resource.size() < 20000;
 
-      allow update: if signedIn()
-        && request.auth.uid == resource.data.editorUid
-        && request.resource.data.editorUid == resource.data.editorUid
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.expiresAt is timestamp
-        && request.resource.data.expiresAt > request.time
-        && request.resource.data.expiresAt < request.time + duration.value(185, 'd')
-        && request.resource.data.title is string
-        && request.resource.data.title.size() > 0
-        && request.resource.data.title.size() < 200
-        && request.resource.data.docParts is int
-        && request.resource.data.audioParts is int
-        && request.resource.data.docParts >= 1
-        && request.resource.data.docParts < 80
-        && request.resource.data.audioParts >= 0
-        && request.resource.data.audioParts < 80
-        && request.resource.size() < 20000;
+      allow update: if ownerKeepsShare() || recipientAcceptsShare(shareId) || memberEditsShare(shareId);
 
       allow delete: if signedIn() && request.auth.uid == resource.data.editorUid;
 
       match /parts/{partId} {
-        allow get: if publicLive(shareId) || isOwner(shareId);
+        allow get: if publicLive(shareId) || isOwner(shareId) || isMember(shareId) || isViewer(shareId);
         allow list: if false;
-        allow create, update: if isOwner(shareId)
+        allow create, update: if (isOwner(shareId) || isMember(shareId))
           && partId.matches('^(doc|audio)-[0-9]{1,4}$')
           && request.resource.data.index is int
           && request.resource.data.index >= 0
           && request.resource.data.index < 80
           && request.resource.size() < 1048576;
+        allow delete: if isOwner(shareId) || isMember(shareId);
+      }
+
+      match /gate/{docId} {
+        allow get: if (docId == 'edit' || docId == 'view') && isOwner(shareId);
+        allow list: if false;
+        allow create, update: if (docId == 'edit' || docId == 'view')
+          && isOwner(shareId)
+          && request.resource.data.keys().hasOnly(['key'])
+          && request.resource.data.key is string
+          && request.resource.data.key.size() >= 20
+          && request.resource.data.key.size() < 80;
         allow delete: if isOwner(shareId);
       }
+
+      match /viewers/{uid} {
+        allow get: if signedIn() && request.auth.uid == uid;
+        allow list: if isOwner(shareId);
+        allow create: if signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['key'])
+          && request.resource.data.key is string
+          && request.resource.data.key.size() >= 20
+          && request.resource.data.key
+              == get(/databases/$(database)/documents/shares/$(shareId)/gate/view).data.key;
+        allow update: if false;
+        allow delete: if isOwner(shareId);
+      }
+
+      match /members/{uid} {
+        allow get: if signedIn() && request.auth.uid == uid;
+        allow list: if isOwner(shareId);
+        allow create: if signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['key'])
+          && request.resource.data.key is string
+          && request.resource.data.key.size() >= 20
+          && request.resource.data.key
+              == get(/databases/$(database)/documents/shares/$(shareId)/gate/edit).data.key;
+        allow update: if false;
+        allow delete: if isOwner(shareId);
+      }
+    }
+
+    // One offer per project, filed under the destination email so that
+    // person can list it after they register. Nobody can list another inbox.
+    match /mailboxes/{emailKey}/invites/{shareId} {
+      function isAddressee() {
+        return signedIn()
+          && request.auth.token.email is string
+          && emailKey == authEmail();
+      }
+
+      function ownerWritesInvite() {
+        return signedIn()
+          && request.auth.token.email is string
+          && isOwner(shareId)
+          && emailKey == request.resource.data.toEmail
+          && request.resource.data.keys().hasOnly([
+            'shareId', 'title', 'fromUid', 'fromEmail', 'toEmail', 'status', 'createdAt'
+          ])
+          && request.resource.data.shareId == shareId
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 0
+          && request.resource.data.title.size() < 200
+          && request.resource.data.fromUid == request.auth.uid
+          && request.resource.data.fromEmail == request.auth.token.email
+          && request.resource.data.toEmail is string
+          && request.resource.data.toEmail == request.resource.data.toEmail.lower()
+          && request.resource.data.toEmail != authEmail()
+          && request.resource.data.toEmail.size() > 4
+          && request.resource.data.toEmail.size() < 200
+          && request.resource.data.status == 'pending'
+          && request.resource.data.createdAt is timestamp
+          && request.resource.size() < 4000;
+      }
+
+      allow get: if isAddressee()
+        || (signedIn() && resource.data.toEmail == emailKey && isOwner(shareId));
+      allow list: if isAddressee();
+      allow create: if ownerWritesInvite();
+      allow update: if ownerWritesInvite()
+        || (
+          isAddressee()
+          && resource.data.status == 'pending'
+          && request.resource.data.status == 'accepted'
+          && request.resource.data.acceptedUid == request.auth.uid
+          && request.resource.data.acceptedAt is timestamp
+          && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['status', 'acceptedUid', 'acceptedAt'])
+        );
+      allow delete: if signedIn() && isOwner(shareId);
     }
   }
 }

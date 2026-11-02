@@ -53,7 +53,7 @@ export const es: Messages = {
   host: {
     open: 'Publicar',
     openTitle:
-      'Publica esta coreografía en línea por un plazo. Quien tenga el enlace solo puede verla.',
+      'Publica esta coreografía en línea por un plazo. Obtienes un enlace de edición y otro de solo lectura.',
     title: 'Publicar para el elenco',
     close: 'Cerrar',
     setup:
@@ -80,10 +80,63 @@ export const es: Messages = {
     withdrawn: 'El enlace quedó retirado.',
     working: 'Subiendo…',
     progress: (done: number, total: number): string => `Subiendo ${done} / ${total}`,
-    readLink: 'Enlace para el elenco (solo lectura)',
+    editLink: 'Enlace de edición',
+    editLinkHint:
+      'Quien abra este enlace puede editar, sin crear una cuenta. También quien acaba de transferir la propiedad.',
+    editLinkKeeps:
+      'Puedes editar porque abriste el enlace de edición. La propiedad está en otra cuenta.',
+    guestEditor: 'Estás editando por el enlace. No hace falta registrarse.',
+    guestViewer: 'Estás viendo por el enlace de solo lectura. No hace falta registrarse.',
+    readLink: 'Enlace de solo lectura (para compartir)',
+    readLinkHint:
+      'Nadie puede editar desde este enlace, ni siquiera el dueño. Si el dueño refresca los enlaces, este deja de servir.',
     copy: 'Copiar',
+    copyEdit: 'Copiar enlace de edición',
+    copyRead: 'Copiar enlace de solo lectura',
     copied: 'Enlace copiado',
-    editorNote: 'Esta cuenta puede seguir editando. Las demás personas solo ven.',
+    copiedEdit: 'Enlace de edición copiado',
+    copiedRead: 'Enlace de solo lectura copiado',
+    expiresOn: (when: string): string => `En línea hasta ${when}`,
+    expiryTitle: 'Este proyecto está por caducar',
+    expiryBody: (days: number, when: string): string =>
+      days <= 1
+        ? `Queda menos de un día. Caduca el ${when}. ¿Está bien que caduque, o prefieres reprogramar un plazo adicional?`
+        : `Quedan ${days} días. Caduca el ${when}. ¿Está bien que caduque, o prefieres reprogramar un plazo adicional?`,
+    expiryFinal: (days: number, when: string): string =>
+      days <= 1
+        ? `Segundo aviso. Queda menos de un día. Caduca el ${when}. ¿Lo dejas caducar o reprogramas el plazo?`
+        : `Segundo aviso. Quedan ${days} días. Caduca el ${when}. ¿Lo dejas caducar o reprogramas el plazo?`,
+    expiryLetEnd: 'Dejar que caduque',
+    expiryExtend: 'Reprogramar plazo',
+    expiryApply: 'Aplicar el nuevo plazo',
+    expiryFailed: 'No se pudo actualizar el plazo.',
+    transferHint:
+      'Ofrece la propiedad a otro correo. Este sitio no envía ese mensaje. Esa persona abre GridStage, entra o crea la cuenta con ese correo, y pulsa Aceptar la propiedad.',
+    transferEmail: 'Correo de destino',
+    transferSend: 'Ofrecer la propiedad',
+    transferPending: (email: string): string => `Esperando a que ${email} acepte.`,
+    transferCancel: 'Cancelar la oferta',
+    transferCancelled: 'La oferta quedó cancelada.',
+    transferSent: (email: string): string => `Propiedad ofrecida a ${email}.`,
+    transferSelf: 'Ese correo es el de esta cuenta.',
+    transferInvalid: 'Escribe un correo válido.',
+    transferFailed: 'No se pudo ofrecer la propiedad.',
+    offerTitle: 'Te ofrecieron un proyecto',
+    offerLead:
+      'Acepta para volverte el dueño. Después podrás editarlo y compartir el enlace de solo lectura.',
+    offerBody: (title: string, from: string): string => `${from} quiere que seas dueño de «${title}».`,
+    offerAccept: 'Aceptar la propiedad',
+    offerLater: 'Ahora no',
+    offerFailed: 'No se pudo aceptar la propiedad.',
+    handedOff: 'Esta cuenta ya no es dueña del proyecto.',
+    linkRevoked:
+      'El dueño actualizó los enlaces. Este ya no abre el proyecto. Pide el enlace nuevo.',
+    refreshLinks: 'Refrescar enlaces',
+    refreshLinksConfirm:
+      '¿Refrescar los enlaces de edición y de solo lectura? Los que ya compartiste dejarán de abrir el proyecto.',
+    refreshLinksDone: 'Enlaces nuevos. Los anteriores ya no sirven.',
+    editorNote:
+      'El enlace de edición permite editar, sin cuenta. El de solo lectura no, ni siquiera al dueño. El dueño puede refrescar los dos.',
     audioNote:
       'La música se sube junto con el plano. Una foto del escenario se queda en este dispositivo.',
     audioTooBig: 'El audio pasa de 40 MB. Exporta las canciones a MP3 e inténtalo de nuevo.',
