@@ -41,20 +41,20 @@ const doc: DocState = {
     },
   ],
   positions: { f1: { p1: { formationId: 'f1', performerId: 'p1', x: 1, y: 2, rotation: 0 } } },
-    comments: [],
-    annotations: [
-      {
-        id: 'n1',
-        performanceId: 'perf-1',
-        formationId: 'f1',
-        kind: 'pin',
-        color: '#fff',
-        text: 'hi',
-      },
-    ],
-    fixtures: [],
-    captions: [],
-  };
+  comments: [],
+  annotations: [
+    {
+      id: 'n1',
+      performanceId: 'perf-1',
+      formationId: 'f1',
+      kind: 'pin',
+      color: '#fff',
+      text: 'hi',
+    },
+  ],
+  fixtures: [],
+  captions: [],
+};
 
 describe('cloneDocAs', () => {
   it('gives the copy a new performance id and title', () => {

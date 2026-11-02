@@ -132,7 +132,8 @@ export const zh: Messages = {
     refreshLinks: '刷新連結',
     refreshLinksConfirm: '要刷新編輯連結和唯讀連結嗎？已經分享出去的連結將無法再開啟作品。',
     refreshLinksDone: '已換成新連結。先前的連結不再有效。',
-    editorNote: '編輯連結可以改內容，不必有帳號。唯讀連結不行，擁有者從那條也不行。擁有者可以刷新兩條連結。',
+    editorNote:
+      '編輯連結可以改內容，不必有帳號。唯讀連結不行，擁有者從那條也不行。擁有者可以刷新兩條連結。',
     audioNote: '音樂會跟隊形一起上傳。場地照片留在這台裝置上。',
     audioTooBig: '音訊超過 40 MB。請把曲子輸出成 MP3 再試一次。',
     saved: '已發布。停止編輯後幾秒會自動上傳。',

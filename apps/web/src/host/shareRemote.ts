@@ -279,7 +279,7 @@ async function writeShare(input: {
       : null;
   const docParts = packed !== null ? packed.docParts : splitDocOnly(input.doc);
 
-  let shareId = input.existingShareId;
+  const shareId = input.existingShareId;
   let previousDocParts = 0;
   let previousAudioParts = 0;
   let owned = false;

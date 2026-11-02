@@ -108,7 +108,8 @@ export function sharePageUrl(shareId: string, editKey?: string | null): string {
   url.search = '';
   url.hash = '';
   url.searchParams.set('share', shareId);
-  if (editKey !== undefined && editKey !== null && editKey !== '') url.searchParams.set('key', editKey);
+  if (editKey !== undefined && editKey !== null && editKey !== '')
+    url.searchParams.set('key', editKey);
   return url.toString();
 }
 

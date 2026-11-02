@@ -126,7 +126,8 @@ export const es: Messages = {
     offerTitle: 'Te ofrecieron un proyecto',
     offerLead:
       'Acepta para volverte el dueño. Después podrás editarlo y compartir el enlace de solo lectura.',
-    offerBody: (title: string, from: string): string => `${from} quiere que seas dueño de «${title}».`,
+    offerBody: (title: string, from: string): string =>
+      `${from} quiere que seas dueño de «${title}».`,
     offerAccept: 'Aceptar la propiedad',
     offerLater: 'Ahora no',
     offerFailed: 'No se pudo aceptar la propiedad.',

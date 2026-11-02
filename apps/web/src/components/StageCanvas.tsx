@@ -853,7 +853,10 @@ export function StageCanvas(): ReactElement {
 
         <Layer
           listening={
-            annotateMode === 'off' && selectedPropId === null && selectedFixtureId === null && selectedCaptionId === null
+            annotateMode === 'off' &&
+            selectedPropId === null &&
+            selectedFixtureId === null &&
+            selectedCaptionId === null
           }
         >
           {performers.map((p) => {
@@ -1229,7 +1232,7 @@ export function StageCanvas(): ReactElement {
               width={Math.abs(marquee.x1 - marquee.x0)}
               height={Math.abs(marquee.y1 - marquee.y0)}
               fill="rgba(26, 115, 232, 0.12)"
-                    stroke="#1a73e8"
+              stroke="#1a73e8"
               strokeWidth={1}
               dash={[4, 4]}
             />

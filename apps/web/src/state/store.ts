@@ -666,7 +666,9 @@ export const useEditor = create<EditorState>()(
           set((s) => {
             const spot = placeOnStage(s.performance, x, y);
             return {
-              fixtures: s.fixtures.map((piece) => (piece.id === id ? { ...piece, ...spot } : piece)),
+              fixtures: s.fixtures.map((piece) =>
+                piece.id === id ? { ...piece, ...spot } : piece,
+              ),
             };
           }),
 
@@ -715,7 +717,9 @@ export const useEditor = create<EditorState>()(
           set((s) => {
             const spot = placeOnStage(s.performance, x, y);
             return {
-              captions: s.captions.map((piece) => (piece.id === id ? { ...piece, ...spot } : piece)),
+              captions: s.captions.map((piece) =>
+                piece.id === id ? { ...piece, ...spot } : piece,
+              ),
             };
           }),
 

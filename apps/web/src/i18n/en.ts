@@ -86,7 +86,8 @@ export const en = {
     editLink: 'Edit link',
     editLinkHint:
       'Anyone who opens this link can edit, with no account. That includes someone who just transferred ownership.',
-    editLinkKeeps: 'You can edit because you opened the edit link. Another account owns the project.',
+    editLinkKeeps:
+      'You can edit because you opened the edit link. Another account owns the project.',
     guestEditor: 'You are editing from the link. No account is required.',
     guestViewer: 'You are viewing from the view-only link. No account is required.',
     readLink: 'View-only link (share with everyone)',
@@ -130,7 +131,8 @@ export const en = {
     offerLater: 'Not now',
     offerFailed: 'Could not accept ownership.',
     handedOff: 'This account no longer owns the project.',
-    linkRevoked: 'The owner refreshed the links. This one no longer opens the project. Ask for the new link.',
+    linkRevoked:
+      'The owner refreshed the links. This one no longer opens the project. Ask for the new link.',
     refreshLinks: 'Refresh links',
     refreshLinksConfirm:
       'Refresh the edit link and the view-only link? Links you already shared will stop opening the project.',
@@ -433,7 +435,8 @@ export const en = {
   props: {
     title: 'Formation objects',
     add: 'Labelled objects',
-    addTitle: 'A labelled rectangle that belongs to the formation. Drag it in each formation, like a dancer.',
+    addTitle:
+      'A labelled rectangle that belongs to the formation. Drag it in each formation, like a dancer.',
     listAria: 'Formation objects',
     sectionTitle: 'Formation object',
     name: 'Label',

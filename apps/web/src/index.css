@@ -16,7 +16,8 @@
   --muted: #5f6368;
   --accent: #1a73e8;
 
-  --font-display: 'Roboto Variable', 'PingFang SC', 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif;
+  --font-display:
+    'Roboto Variable', 'PingFang SC', 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif;
   --font-body: 'Roboto Variable', 'PingFang SC', 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif;
   --font-data: 'Roboto Mono', ui-monospace, monospace;
 }
@@ -176,7 +177,9 @@ body {
   border-radius: 20px;
   padding: 5px 12px;
   cursor: pointer;
-  transition: background 120ms ease-out, border-color 120ms ease-out;
+  transition:
+    background 120ms ease-out,
+    border-color 120ms ease-out;
   white-space: nowrap;
   flex-shrink: 0;
 }

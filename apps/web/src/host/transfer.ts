@@ -9,7 +9,7 @@ import {
   Timestamp,
   updateDoc,
 } from 'firebase/firestore';
-import type { Firestore } from 'firebase/firestore';
+import type { DocumentReference, Firestore } from 'firebase/firestore';
 import { create } from 'zustand';
 import { ensureOwnerLinks } from './editAccess';
 import { hostingDb } from './firebase';
@@ -54,7 +54,7 @@ export function normalizeOwnerEmail(email: string): string | null {
   return value;
 }
 
-function inviteRef(db: Firestore, email: string, shareId: string) {
+function inviteRef(db: Firestore, email: string, shareId: string): DocumentReference {
   return doc(db, 'mailboxes', email, 'invites', shareId);
 }
 
