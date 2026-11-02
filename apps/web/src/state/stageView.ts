@@ -24,6 +24,12 @@ export const MAX_STAGE_ZOOM = 8;
 
 export const IDENTITY_STAGE_VIEW: StageView = { zoom: 1, panX: 0, panY: 0 };
 
+/** Slide the plan by a screen delta, in pixels. Stored meters never change. */
+export function panView(view: StageView, dx: number, dy: number): StageView {
+  if (!Number.isFinite(dx) || !Number.isFinite(dy) || (dx === 0 && dy === 0)) return view;
+  return { ...view, panX: view.panX + dx, panY: view.panY + dy };
+}
+
 function clampZoom(zoom: number): number {
   return Math.min(MAX_STAGE_ZOOM, Math.max(MIN_STAGE_ZOOM, zoom));
 }

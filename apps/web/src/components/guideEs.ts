@@ -205,7 +205,7 @@ export const GUIDE_ES: GuideSection[] = [
       {
         title: 'Marco, arrastre y desenredar',
         body: [
-          'Arrastra en el suelo vacío para encuadrar a varios y moverlos juntos.',
+          'Arrastra en el suelo vacío para agarrar el plano y moverlo. Con Mayús, el mismo arrastre encuadra a varios para moverlos juntos.',
           'Desenredar cambia quién va a cada sitio para que los recorridos no se crucen y la distancia sea mínima.',
         ],
       },

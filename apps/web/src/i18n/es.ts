@@ -595,7 +595,8 @@ export const es: Messages = {
     pinTitle: 'Deja una nota de texto en esta formación; pulsa una nota para borrarla',
     pinPrompt: 'Texto de la nota:',
     canvasAria: 'Lienzo del escenario',
-    zoomHint: 'Rueda del ratón, o dos dedos, para acercar o alejar el escenario',
+    zoomHint:
+      'Arrastra un sitio vacío para agarrar y mover el escenario. Rueda, o dos dedos, para acercar. Mayús y arrastrar selecciona a varios.',
     audience: 'AUDIENCIA',
     loading3d: 'Cargando la vista 3D…',
     to3dTitle: 'Vista 3D (solo lectura)',

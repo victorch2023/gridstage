@@ -585,7 +585,8 @@ export const en = {
     pinTitle: 'Drop a text note on this formation; click a note to erase it',
     pinPrompt: 'Note text:',
     canvasAria: 'Stage canvas',
-    zoomHint: 'Scroll, or pinch with two fingers, to zoom the stage',
+    zoomHint:
+      'Drag empty stage to grab and move it. Scroll, or pinch with two fingers, to zoom. Shift-drag selects several.',
     audience: 'AUDIENCE',
     loading3d: 'Loading 3D preview…',
     to3dTitle: '3D preview (view only)',

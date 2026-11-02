@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { IDENTITY_STAGE_VIEW, wheelZoomFactor, zoomViewAt } from './stageView';
+import { IDENTITY_STAGE_VIEW, panView, wheelZoomFactor, zoomViewAt } from './stageView';
 import type { StageZoomLayout } from './stageView';
 
 const layout: StageZoomLayout = {
@@ -41,6 +41,19 @@ describe('zoomViewAt', () => {
     expect(inn.zoom).toBe(8);
     const out = zoomViewAt({ zoom: 0.4, panX: 0, panY: 0 }, 400, 300, 0.5, layout);
     expect(out.zoom).toBe(0.4);
+  });
+});
+
+describe('panView', () => {
+  it('slides the plan by the pointer delta and leaves the zoom alone', () => {
+    const next = panView({ zoom: 2, panX: 10, panY: -4 }, 12, -3);
+    expect(next).toEqual({ zoom: 2, panX: 22, panY: -7 });
+  });
+
+  it('returns the same view when nothing moved', () => {
+    const view = { zoom: 1, panX: 4, panY: 5 };
+    expect(panView(view, 0, 0)).toBe(view);
+    expect(panView(view, Number.NaN, 2)).toBe(view);
   });
 });
 

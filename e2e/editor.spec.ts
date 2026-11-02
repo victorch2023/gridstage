@@ -1148,13 +1148,15 @@ test('marquee selects several performers and drags them together', async ({ page
   await page.getByText('Add performer').click();
   await page.getByText('Add performer').click();
 
-  // Rubber-band over the whole floor: all three get selected.
+  // Shift-drag rubber-bands the floor: a plain drag now pans the plan.
   const a = meterToPx(0.4, 5.2);
   const b = meterToPx(11.5, 7.8);
+  await page.keyboard.down('Shift');
   await page.mouse.move(a.x, a.y);
   await page.mouse.down();
   await page.mouse.move(b.x, b.y, { steps: 8 });
   await page.mouse.up();
+  await page.keyboard.up('Shift');
   await expect(page.getByText(/3 selected/)).toBeVisible();
 
   const before = await readDoc(page);
