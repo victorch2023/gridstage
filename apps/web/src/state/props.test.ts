@@ -35,6 +35,6 @@ describe('newProp', () => {
   it('rect defaults to 2x1m, others to 1x1m', () => {
     expect(newProp('a', 'p', 0, 'rect').width).toBe(2);
     expect(newProp('a', 'p', 0, 'circle').width).toBe(1);
-    expect(newProp('a', 'p', 2, 'triangle').name).toBe('Prop 3');
+    expect(newProp('a', 'p', 2, 'triangle').name).toBe('Objeto 3');
   });
 });

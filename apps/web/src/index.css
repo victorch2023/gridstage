@@ -94,8 +94,15 @@ body {
   align-items: center;
   gap: 14px;
   padding: 0 14px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
   background: var(--panel);
   border-bottom: 1px solid var(--panel-edge);
+}
+
+.topbar::-webkit-scrollbar {
+  display: none;
 }
 
 .wordmark {

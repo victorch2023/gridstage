@@ -84,11 +84,12 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('easy mode hides power tools until expert is chosen', async ({ page }) => {
-  await expect(page.getByRole('button', { name: 'Add prop' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Labelled objects' })).toBeVisible();
   await page.getByRole('button', { name: 'Preferences' }).click();
   await page.locator('#prefs-uimode').selectOption('easy');
   await page.getByRole('button', { name: 'Close', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Add prop' })).toBeHidden();
+  // Formation objects stay in easy mode; the other power tools do not.
+  await expect(page.getByRole('button', { name: 'Labelled objects' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Save cast as crew' })).toBeHidden();
   await expect(page.getByRole('button', { name: 'Tap beat' })).toBeHidden();
   // core flow stays visible
@@ -1445,7 +1446,7 @@ test('stage background image uploads, persists and can be removed', async ({ pag
 });
 
 test('props: add, edit, drag, persist and delete', async ({ page }) => {
-  await page.getByRole('button', { name: 'Add prop' }).click();
+  await page.getByRole('button', { name: 'Labelled objects' }).click();
   await expect(page.locator('#prop-name')).toHaveValue('Prop 1');
 
   // rename + resize via the prop panel
