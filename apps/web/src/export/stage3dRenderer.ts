@@ -98,11 +98,16 @@ export function buildStage3dRenderer(canvas: HTMLCanvasElement, doc: SceneDoc): 
   );
 
   for (const piece of doc.fixtures ?? []) {
-    mesh(
-      new THREE.BoxGeometry(piece.width, 0.8, piece.height),
+    const ellipse = piece.shape === 'ellipse';
+    const body = mesh(
+      ellipse
+        ? new THREE.CylinderGeometry(1, 1, 0.8, 32)
+        : new THREE.BoxGeometry(piece.width, 0.8, piece.height),
       new THREE.MeshStandardMaterial({ color: piece.color }),
       [piece.x, 0.4, piece.y],
     );
+    body.rotation.y = -(((piece.rotation ?? 0) * Math.PI) / 180);
+    if (ellipse) body.scale.set(piece.width / 2, 1, piece.height / 2);
   }
 
   const performerNodes = new Map<string, { node: THREE.Group; bar: THREE.Mesh }>();

@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import { exportableState } from '../state/store';
 import { byOrder, formatTimecode } from '../state/interpolate';
 import { placeOutline, propOutline } from '../state/props';
+import { captionSize, fixtureShape, pieceRotation } from '../state/shapeEdit';
 import { safeFilename } from './filename';
 import { ensureCjkFont, hasCjk } from './pdfFont';
 import { messages } from '../i18n';
@@ -140,19 +141,67 @@ export function drawWalkChartsInto(doc: jsPDF, font: string): void {
     }
     doc.setLineDashPattern([], 0);
 
+    const strokeFootprint = (
+      x: number,
+      y: number,
+      width: number,
+      height: number,
+      rotation: number,
+      ellipse: boolean,
+    ): void => {
+      const local: [number, number][] = ellipse
+        ? Array.from({ length: 24 }, (_, i) => {
+            const a = (i / 24) * Math.PI * 2;
+            return [(width / 2) * Math.cos(a), (height / 2) * Math.sin(a)] as [number, number];
+          })
+        : [
+            [-width / 2, -height / 2],
+            [width / 2, -height / 2],
+            [width / 2, height / 2],
+            [-width / 2, height / 2],
+          ];
+      const sx = flip ? s.performance.stageWidth - x : x;
+      const sy = flip ? s.performance.stageHeight - y : y;
+      const corners = placeOutline(local, sx, sy, rotation + (flip ? 180 : 0)).map(
+        ([xM, yM]) => [originX + xM * scale, originY + yM * scale] as [number, number],
+      );
+      const first = corners[0];
+      if (first === undefined) return;
+      const segments = corners.slice(1).map((corner, i) => {
+        const prev = corners[i] as [number, number];
+        return [corner[0] - prev[0], corner[1] - prev[1]];
+      });
+      doc.lines(segments, first[0], first[1], [1, 1], 'S', true);
+    };
+
     for (const piece of s.fixtures ?? []) {
-      const [cx, cy] = toPage(piece.x, piece.y);
-      const w = piece.width * scale;
-      const h = piece.height * scale;
       doc.setDrawColor(piece.color);
-      doc.setFillColor(piece.color);
       doc.setLineWidth(0.4);
-      doc.rect(cx - w / 2, cy - h / 2, w, h, 'S');
+      strokeFootprint(
+        piece.x,
+        piece.y,
+        piece.width,
+        piece.height,
+        pieceRotation(piece),
+        fixtureShape(piece) === 'ellipse',
+      );
+      const [cx, cy] = toPage(piece.x, piece.y);
       doc.setFontSize(7);
       doc.setTextColor(DIM);
       doc.text(piece.label, cx, cy + 1, { align: 'center' });
     }
     for (const piece of s.captions ?? []) {
+      const size = captionSize(piece);
+      doc.setDrawColor(piece.color);
+      doc.setLineWidth(0.3);
+      strokeFootprint(
+        piece.x,
+        piece.y,
+        size.width,
+        size.height,
+        pieceRotation(piece),
+        fixtureShape(piece) === 'ellipse',
+      );
       const [cx, cy] = toPage(piece.x, piece.y);
       doc.setFontSize(9);
       doc.setTextColor(piece.color);

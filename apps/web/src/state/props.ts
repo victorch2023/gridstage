@@ -9,15 +9,17 @@ export function newProp(
   performanceId: string,
   index: number,
   kind: PropKind,
+  textOnly = false,
 ): StageProp {
   return {
     id,
     performanceId,
-    name: messages().defaults.prop(index + 1),
-    kind,
+    name: textOnly ? messages().defaults.caption(index + 1) : messages().defaults.prop(index + 1),
+    kind: textOnly ? 'rect' : kind,
     color: PROP_COLORS[index % PROP_COLORS.length] ?? '#8fb98f',
-    width: kind === 'rect' ? 2 : 1,
-    height: 1,
+    width: textOnly || kind === 'rect' ? 2 : 1,
+    height: textOnly ? 0.6 : 1,
+    ...(textOnly ? { textOnly: true } : {}),
   };
 }
 

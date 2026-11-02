@@ -246,17 +246,47 @@ export default function Stage3D(): ReactElement {
             <boxGeometry args={[0.02, 0.02, h]} />
             <meshStandardMaterial color="#1a73e8" transparent opacity={0.35} />
           </mesh>
-          {fixtures.map((piece) => (
-            <mesh key={piece.id} position={[piece.x, 0.4, piece.y]} castShadow>
-              <boxGeometry args={[piece.width, 0.8, piece.height]} />
-              <meshStandardMaterial color={piece.color} />
-            </mesh>
-          ))}
+          {fixtures.map((piece) =>
+            piece.shape === 'ellipse' ? (
+              <mesh
+                key={piece.id}
+                position={[piece.x, 0.4, piece.y]}
+                rotation={[0, -(((piece.rotation ?? 0) * Math.PI) / 180), 0]}
+                scale={[piece.width / 2, 1, piece.height / 2]}
+                castShadow
+              >
+                <cylinderGeometry args={[1, 1, 0.8, 32]} />
+                <meshStandardMaterial color={piece.color} />
+              </mesh>
+            ) : (
+              <mesh
+                key={piece.id}
+                position={[piece.x, 0.4, piece.y]}
+                rotation={[0, -(((piece.rotation ?? 0) * Math.PI) / 180), 0]}
+                castShadow
+              >
+                <boxGeometry args={[piece.width, 0.8, piece.height]} />
+                <meshStandardMaterial color={piece.color} />
+              </mesh>
+            ),
+          )}
           {props.map((prop) => {
             const pose = poses.get(prop.id);
             if (pose === undefined) return null;
-            return (
-              <mesh key={prop.id} position={[pose.x, 0.25, pose.y]} castShadow>
+            const turn: [number, number, number] = [0, -((pose.rotation * Math.PI) / 180), 0];
+            return prop.kind === 'circle' ? (
+              <mesh
+                key={prop.id}
+                position={[pose.x, 0.25, pose.y]}
+                rotation={turn}
+                scale={[prop.width / 2, 1, prop.height / 2]}
+                castShadow
+              >
+                <cylinderGeometry args={[1, 1, 0.5, 32]} />
+                <meshStandardMaterial color={prop.color} />
+              </mesh>
+            ) : (
+              <mesh key={prop.id} position={[pose.x, 0.25, pose.y]} rotation={turn} castShadow>
                 <boxGeometry args={[prop.width, 0.5, prop.height]} />
                 <meshStandardMaterial color={prop.color} />
               </mesh>

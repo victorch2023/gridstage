@@ -37,4 +37,12 @@ describe('newProp', () => {
     expect(newProp('a', 'p', 0, 'circle').width).toBe(1);
     expect(newProp('a', 'p', 2, 'triangle').name).toBe('Objeto 3');
   });
+
+  it('a formation text is a short rectangle named like a caption', () => {
+    const text = newProp('a', 'p', 0, 'rect', true);
+    expect(text.textOnly).toBe(true);
+    expect(text.kind).toBe('rect');
+    expect(text.name).toBe('Texto 1');
+    expect(text.height).toBe(0.6);
+  });
 });

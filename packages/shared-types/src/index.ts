@@ -88,6 +88,9 @@ export interface PerformanceSection {
 
 export type PropKind = 'rect' | 'circle' | 'triangle';
 
+/** Footprint of a fixed object or a text: a box, or a circle that can stretch into an ellipse. */
+export type PieceShape = 'rect' | 'ellipse';
+
 /**
  * A stage prop (box, platform, banner…). Its footprint is a simple shape in
  * meters; each formation stores its own position/rotation for it in the same
@@ -103,11 +106,18 @@ export interface StageProp {
   /** Footprint in meters ('circle' draws an ellipse inside width × height). */
   width: number;
   height: number;
+  /**
+   * A formation text. The name is the wording, and the footprint is still a
+   * rectangle or an ellipse that can be resized and rotated per formation.
+   * Missing on older files: treat as a labelled object.
+   */
+  textOnly?: boolean;
 }
 
 /**
  * Furniture or a fixed set piece. Same place in every formation.
- * x/y is the center, in stage meters. width is along x, height along y.
+ * x/y is the center, in stage meters. width is along x, height along y
+ * before rotation. Older files omit shape and rotation: rect, 0°.
  */
 export interface StageFixture {
   id: string;
@@ -117,15 +127,26 @@ export interface StageFixture {
   height: number;
   label: string;
   color: string;
+  shape?: PieceShape;
+  /** Degrees clockwise, y down. */
+  rotation?: number;
 }
 
-/** A text mark glued to the stage, the same place in every formation. */
+/**
+ * A text mark glued to the stage, the same place in every formation.
+ * width/height are the box in meters. Older files omit them: size from the text.
+ */
 export interface StageCaption {
   id: string;
   x: number;
   y: number;
   text: string;
   color: string;
+  shape?: PieceShape;
+  /** Degrees clockwise, y down. */
+  rotation?: number;
+  width?: number;
+  height?: number;
 }
 
 /**

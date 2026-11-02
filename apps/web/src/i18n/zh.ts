@@ -20,6 +20,13 @@ export const zh: Messages = {
     chinese: '中文',
   },
 
+  colors: {
+    red: '紅色',
+    black: '黑色',
+    yellow: '黃色',
+    fuchsia: '洋紅',
+  },
+
   defaults: {
     performanceTitle: '未命名演出',
     dancer: (n: number): string => `舞者 ${n}`,
@@ -199,7 +206,8 @@ export const zh: Messages = {
     title: '舞台設定',
     close: '關閉',
     fixturesTitle: '舞台物件',
-    fixturesHint: '這些在每個隊形都停在同一個位置：家具、平台、標示。關掉這個視窗才能拖曳它們。',
+    fixturesHint:
+      '這些在每個隊形都停在同一個位置：家具、平台、標示。關掉這個視窗才能拖曳、拉邊緣或旋轉。',
     addFixture: '新增矩形',
     addCaption: '新增文字',
     fixtureLabel: '標籤',
@@ -210,6 +218,11 @@ export const zh: Messages = {
     pieceWidth: '寬度 (m)',
     pieceDepth: '深度 (m)',
     pieceColor: '顏色',
+    shape: '形狀',
+    shapeRect: '矩形',
+    shapeEllipse: '圓形',
+    rotation: '旋轉 (°)',
+    shapeHint: '拖曳邊緣可調整大小。拉圓形的一邊就會變成橢圓。',
   },
 
   beat: {
@@ -416,8 +429,11 @@ export const zh: Messages = {
     title: '隊形物件',
     add: '可標籤的物件',
     addTitle: '一個帶標籤的矩形，屬於這個隊形。可以像舞者一樣在每個隊形分別拖曳。',
+    addText: '文字',
+    addTextTitle: '屬於這個隊形的文字。可以旋轉、改形狀，並在每個隊形放在不同位置。',
     listAria: '隊形物件',
     sectionTitle: '隊形物件',
+    textSection: '隊形文字',
     name: '標籤',
     kind: '形狀',
     kindRect: '矩形',

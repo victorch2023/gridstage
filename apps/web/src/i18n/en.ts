@@ -19,6 +19,13 @@ export const en = {
     chinese: '中文',
   },
 
+  colors: {
+    red: 'Red',
+    black: 'Black',
+    yellow: 'Yellow',
+    fuchsia: 'Fuchsia',
+  },
+
   defaults: {
     performanceTitle: 'Untitled performance',
     dancer: (n: number): string => `Dancer ${n}`,
@@ -206,7 +213,7 @@ export const en = {
     close: 'Close',
     fixturesTitle: 'Stage objects',
     fixturesHint:
-      'These stay in the same place in every formation: a piece of furniture, a platform, a sign. Close this dialog to drag them.',
+      'These stay in the same place in every formation: a piece of furniture, a platform, a sign. Close this dialog to drag them, pull an edge, or rotate them.',
     addFixture: 'Add rectangle',
     addCaption: 'Add text',
     fixtureLabel: 'Label',
@@ -217,6 +224,11 @@ export const en = {
     pieceWidth: 'Width (m)',
     pieceDepth: 'Depth (m)',
     pieceColor: 'Color',
+    shape: 'Shape',
+    shapeRect: 'Rectangle',
+    shapeEllipse: 'Circle',
+    rotation: 'Rotation (°)',
+    shapeHint: 'Drag an edge to resize. Pull one side of a circle to make an ellipse.',
   },
 
   beat: {
@@ -437,8 +449,12 @@ export const en = {
     add: 'Labelled objects',
     addTitle:
       'A labelled rectangle that belongs to the formation. Drag it in each formation, like a dancer.',
+    addText: 'Text',
+    addTextTitle:
+      'A text that belongs to this formation. Rotate it, change its shape, and place it differently in each formation.',
     listAria: 'Formation objects',
     sectionTitle: 'Formation object',
+    textSection: 'Formation text',
     name: 'Label',
     kind: 'Shape',
     kindRect: 'Rectangle',

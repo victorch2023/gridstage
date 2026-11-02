@@ -177,12 +177,28 @@ export function CastPanel(): ReactElement {
         >
           {t.props.add}
         </button>
+        <button
+          type="button"
+          className="btn"
+          title={t.props.addTextTitle}
+          onClick={() => addProp('rect', true)}
+          style={{ marginLeft: 8 }}
+        >
+          {t.props.addText}
+        </button>
       </div>
       {props.length > 0 && (
         <div role="listbox" aria-label={t.props.listAria}>
           {props.map((prop) => {
             const selected = selectedPropId === prop.id;
-            const glyph = prop.kind === 'circle' ? '●' : prop.kind === 'triangle' ? '▲' : '■';
+            const glyph =
+              prop.textOnly === true
+                ? 'T'
+                : prop.kind === 'circle'
+                  ? '●'
+                  : prop.kind === 'triangle'
+                    ? '▲'
+                    : '■';
             return (
               <div
                 key={prop.id}

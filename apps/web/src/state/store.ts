@@ -94,7 +94,7 @@ interface EditorState extends DocState {
   removePerformer: (id: string) => void;
   updatePerformer: (id: string, patch: Partial<Omit<Performer, 'id' | 'performanceId'>>) => void;
 
-  addProp: (kind: PropKind) => void;
+  addProp: (kind: PropKind, textOnly?: boolean) => void;
   removeProp: (id: string) => void;
   updateProp: (id: string, patch: Partial<Omit<StageProp, 'id' | 'performanceId'>>) => void;
   /** Select a prop (null = deselect); clears the performer selection. */
@@ -103,12 +103,31 @@ interface EditorState extends DocState {
   addFixture: () => void;
   updateFixture: (id: string, patch: Partial<Omit<StageFixture, 'id'>>) => void;
   moveFixture: (id: string, x: number, y: number) => void;
+  /** Write a resized or rotated footprint without a second undo step. */
+  commitFixtureGeometry: (
+    id: string,
+    box: { x: number; y: number; width: number; height: number; rotation: number },
+  ) => void;
   removeFixture: (id: string) => void;
   selectFixture: (id: string | null) => void;
 
   addCaption: () => void;
   updateCaption: (id: string, patch: Partial<Omit<StageCaption, 'id'>>) => void;
   moveCaption: (id: string, x: number, y: number) => void;
+  /** Write a resized or rotated text box without a second undo step. */
+  commitCaptionGeometry: (
+    id: string,
+    box: { x: number; y: number; width: number; height: number; rotation: number },
+  ) => void;
+  /**
+   * Resize a formation object and write its place and angle in one formation.
+   * The footprint size is shared by every formation; the place and angle are not.
+   */
+  commitPropGeometry: (
+    id: string,
+    formationId: string,
+    box: { x: number; y: number; width: number; height: number; rotation: number },
+  ) => void;
   removeCaption: (id: string) => void;
   selectCaption: (id: string | null) => void;
 
@@ -577,9 +596,9 @@ export const useEditor = create<EditorState>()(
             performers: s.performers.map((p) => (p.id === id ? { ...p, ...patch } : p)),
           })),
 
-        addProp: (kind) =>
+        addProp: (kind, textOnly = false) =>
           mutateDoc((s) => {
-            const prop = newProp(newId(), s.performance.id, s.props.length, kind);
+            const prop = newProp(newId(), s.performance.id, s.props.length, kind, textOnly);
             // Center stage in every formation; drag it per formation from there.
             const positions: PositionMap = { ...s.positions };
             for (const f of s.formations) {
@@ -647,6 +666,8 @@ export const useEditor = create<EditorState>()(
               height: 1,
               label: messages().defaults.fixture(s.fixtures.length + 1),
               color: SET_COLORS[s.fixtures.length % SET_COLORS.length] ?? '#8a8074',
+              shape: 'rect',
+              rotation: 0,
             };
             return {
               fixtures: [...s.fixtures, piece],
@@ -671,6 +692,22 @@ export const useEditor = create<EditorState>()(
               ),
             };
           }),
+
+        commitFixtureGeometry: (id, box) =>
+          set((s) => ({
+            fixtures: s.fixtures.map((piece) =>
+              piece.id === id
+                ? {
+                    ...piece,
+                    x: box.x,
+                    y: box.y,
+                    width: box.width,
+                    height: box.height,
+                    rotation: box.rotation,
+                  }
+                : piece,
+            ),
+          })),
 
         removeFixture: (id) =>
           mutateDoc((s) => ({
@@ -698,6 +735,10 @@ export const useEditor = create<EditorState>()(
               ...spot,
               text: messages().defaults.caption(s.captions.length + 1),
               color: CAPTION_COLOR,
+              shape: 'rect',
+              rotation: 0,
+              width: 2,
+              height: 0.6,
             };
             return {
               captions: [...s.captions, piece],
@@ -720,6 +761,41 @@ export const useEditor = create<EditorState>()(
               captions: s.captions.map((piece) =>
                 piece.id === id ? { ...piece, ...spot } : piece,
               ),
+            };
+          }),
+
+        commitCaptionGeometry: (id, box) =>
+          set((s) => ({
+            captions: s.captions.map((piece) =>
+              piece.id === id
+                ? {
+                    ...piece,
+                    x: box.x,
+                    y: box.y,
+                    width: box.width,
+                    height: box.height,
+                    rotation: box.rotation,
+                  }
+                : piece,
+            ),
+          })),
+
+        commitPropGeometry: (id, formationId, box) =>
+          set((s) => {
+            const existing = s.positions[formationId]?.[id];
+            if (existing === undefined) return {};
+            const rotation = ((box.rotation % 360) + 360) % 360;
+            return {
+              props: s.props.map((prop) =>
+                prop.id === id ? { ...prop, width: box.width, height: box.height } : prop,
+              ),
+              positions: {
+                ...s.positions,
+                [formationId]: {
+                  ...s.positions[formationId],
+                  [id]: { ...existing, x: box.x, y: box.y, rotation },
+                },
+              },
             };
           }),
 

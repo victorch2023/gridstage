@@ -16,8 +16,10 @@ import type { FormationPreset } from '../state/formationPresets';
 import type { Snapshot } from '../state/history';
 import { CommentsSection } from './CommentsSection';
 import { NumberField } from './NumberField';
+import { ColorField } from './ColorField';
 import { StageSettingsDialog } from './StageSettingsDialog';
 import { useT } from '../i18n';
+import { captionSize, fixtureShape, pieceRotation } from '../state/shapeEdit';
 import { byOrder } from '../state/interpolate';
 import { normalizeBadge } from '../state/badge';
 import { analyzeTransition } from '@gridstage/path-planner';
@@ -91,11 +93,10 @@ function PerformerSection(): ReactElement | null {
         </label>
         <div className="field">
           <label htmlFor="perf-color">{t.performer.color}</label>
-          <input
+          <ColorField
             id="perf-color"
-            type="color"
             value={performer.color}
-            onChange={(e) => updatePerformer(performer.id, { color: e.target.value })}
+            onChange={(color) => updatePerformer(performer.id, { color })}
           />
         </div>
         <div className="field expert-only-ui">
@@ -535,12 +536,11 @@ function FormationSection(): ReactElement | null {
             {t.formation.colorLabel}
           </label>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input
+            <ColorField
               id="form-color"
-              type="color"
               title={t.formation.colorTitle}
               value={formation.color ?? '#e8843c'}
-              onChange={(e) => updateFormation(formation.id, { color: e.target.value })}
+              onChange={(color) => updateFormation(formation.id, { color })}
             />
             {formation.color !== undefined && (
               <button
@@ -871,6 +871,52 @@ function PieceSizeFields({
   );
 }
 
+function ShapeChoice({
+  id,
+  shape,
+  onChange,
+}: {
+  id: string;
+  shape: 'rect' | 'ellipse';
+  onChange: (shape: 'rect' | 'ellipse') => void;
+}): ReactElement {
+  const t = useT();
+  return (
+    <div className="field">
+      <label htmlFor={id}>{t.stageSettings.shape}</label>
+      <select
+        id={id}
+        value={shape}
+        onChange={(event) => onChange(event.target.value === 'ellipse' ? 'ellipse' : 'rect')}
+      >
+        <option value="rect">{t.stageSettings.shapeRect}</option>
+        <option value="ellipse">{t.stageSettings.shapeEllipse}</option>
+      </select>
+      <div style={{ color: 'var(--ink-dim)', fontSize: 12, marginTop: 4 }}>
+        {t.stageSettings.shapeHint}
+      </div>
+    </div>
+  );
+}
+
+function RotationField({
+  id,
+  value,
+  onCommit,
+}: {
+  id: string;
+  value: number;
+  onCommit: (deg: number) => void;
+}): ReactElement {
+  const t = useT();
+  return (
+    <div className="field">
+      <label htmlFor={id}>{t.stageSettings.rotation}</label>
+      <NumberField id={id} step={5} decimals={0} value={value} onCommit={onCommit} />
+    </div>
+  );
+}
+
 function FixtureSection(): ReactElement | null {
   const t = useT();
   const fixtures = useEditor((s) => s.fixtures);
@@ -894,19 +940,33 @@ function FixtureSection(): ReactElement | null {
         </div>
         <div className="field">
           <label htmlFor="fixture-color">{t.stageSettings.pieceColor}</label>
-          <input
+          <ColorField
             id="fixture-color"
-            type="color"
             value={piece.color}
-            onChange={(event) => updateFixture(piece.id, { color: event.target.value })}
+            onChange={(color) => updateFixture(piece.id, { color })}
           />
         </div>
+        <ShapeChoice
+          id="fixture-shape"
+          shape={fixtureShape(piece)}
+          onChange={(shape) =>
+            updateFixture(
+              piece.id,
+              shape === 'ellipse' ? { shape, height: piece.width } : { shape },
+            )
+          }
+        />
         <PieceSizeFields
           idPrefix="fixture"
           width={piece.width}
           height={piece.height}
           onWidth={(width) => updateFixture(piece.id, { width })}
           onHeight={(height) => updateFixture(piece.id, { height })}
+        />
+        <RotationField
+          id="fixture-rotation"
+          value={pieceRotation(piece)}
+          onCommit={(rotation) => updateFixture(piece.id, { rotation })}
         />
         <button type="button" className="btn" onClick={() => removeFixture(piece.id)}>
           {t.stageSettings.removePiece}
@@ -924,6 +984,7 @@ function CaptionSection(): ReactElement | null {
   const removeCaption = useEditor((s) => s.removeCaption);
   const piece = captions.find((item) => item.id === selectedCaptionId);
   if (piece === undefined) return null;
+  const size = captionSize(piece);
   return (
     <>
       <div className="panel-title">{t.stageSettings.captionSection}</div>
@@ -939,13 +1000,40 @@ function CaptionSection(): ReactElement | null {
         </div>
         <div className="field">
           <label htmlFor="caption-color">{t.stageSettings.pieceColor}</label>
-          <input
+          <ColorField
             id="caption-color"
-            type="color"
             value={piece.color}
-            onChange={(event) => updateCaption(piece.id, { color: event.target.value })}
+            onChange={(color) => updateCaption(piece.id, { color })}
           />
         </div>
+        <ShapeChoice
+          id="caption-shape"
+          shape={fixtureShape(piece)}
+          onChange={(shape) =>
+            updateCaption(piece.id, {
+              shape,
+              width: piece.width ?? size.width,
+              height:
+                shape === 'ellipse' ? (piece.width ?? size.width) : (piece.height ?? size.height),
+            })
+          }
+        />
+        <PieceSizeFields
+          idPrefix="caption"
+          width={size.width}
+          height={size.height}
+          onWidth={(width) =>
+            updateCaption(piece.id, { width, height: piece.height ?? size.height })
+          }
+          onHeight={(height) =>
+            updateCaption(piece.id, { height, width: piece.width ?? size.width })
+          }
+        />
+        <RotationField
+          id="caption-rotation"
+          value={pieceRotation(piece)}
+          onCommit={(rotation) => updateCaption(piece.id, { rotation })}
+        />
         <button type="button" className="btn" onClick={() => removeCaption(piece.id)}>
           {t.stageSettings.removePiece}
         </button>
@@ -970,10 +1058,14 @@ function PropSection(): ReactElement | null {
 
   return (
     <>
-      <div className="panel-title">{t.props.sectionTitle}</div>
+      <div className="panel-title">
+        {prop.textOnly === true ? t.props.textSection : t.props.sectionTitle}
+      </div>
       <div className="panel-section">
         <div className="field">
-          <label htmlFor="prop-name">{t.props.name}</label>
+          <label htmlFor="prop-name">
+            {prop.textOnly === true ? t.stageSettings.captionText : t.props.name}
+          </label>
           <input
             id="prop-name"
             type="text"
@@ -988,22 +1080,26 @@ function PropSection(): ReactElement | null {
             value={prop.kind}
             onChange={(e) => {
               const kind = e.target.value;
-              if (kind === 'rect' || kind === 'circle' || kind === 'triangle')
-                updateProp(prop.id, { kind });
+              if (kind !== 'rect' && kind !== 'circle' && kind !== 'triangle') return;
+              if (prop.textOnly === true && kind === 'triangle') return;
+              if (kind === 'circle') updateProp(prop.id, { kind, height: prop.width });
+              else updateProp(prop.id, { kind });
             }}
           >
             <option value="rect">{t.props.kindRect}</option>
             <option value="circle">{t.props.kindCircle}</option>
-            <option value="triangle">{t.props.kindTriangle}</option>
+            {prop.textOnly !== true && <option value="triangle">{t.props.kindTriangle}</option>}
           </select>
+          <div style={{ color: 'var(--ink-dim)', fontSize: 12, marginTop: 4 }}>
+            {t.stageSettings.shapeHint}
+          </div>
         </div>
         <div className="field">
           <label htmlFor="prop-color">{t.props.color}</label>
-          <input
+          <ColorField
             id="prop-color"
-            type="color"
             value={prop.color}
-            onChange={(e) => updateProp(prop.id, { color: e.target.value })}
+            onChange={(color) => updateProp(prop.id, { color })}
           />
         </div>
         <div style={{ display: 'flex', gap: 8 }}>

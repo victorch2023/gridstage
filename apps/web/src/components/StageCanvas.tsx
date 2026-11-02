@@ -8,7 +8,6 @@ import {
   Group,
   Wedge,
   Circle,
-  Ellipse,
   Text,
   Shape,
   RegularPolygon,
@@ -26,6 +25,17 @@ import { useReadOnly } from '../state/viewMode';
 import { useLayout } from '../state/layout';
 import { useStageBackground } from '../state/stageBackground';
 import { propOutline } from '../state/props';
+import {
+  captionBox,
+  fixtureBox,
+  fixtureShape,
+  resizeFromEdge,
+  rotationFromPointer,
+  shapeScreenDeg,
+} from '../state/shapeEdit';
+import type { ShapeBox } from '../state/shapeEdit';
+import { EditableShape } from './ShapeHandles';
+import type { HandleKind } from './ShapeHandles';
 import { IDENTITY_STAGE_VIEW, wheelZoomFactor, zoomViewAt } from '../state/stageView';
 import type { StageZoomLayout } from '../state/stageView';
 import { useT } from '../i18n';
@@ -89,6 +99,9 @@ export function StageCanvas(): ReactElement {
   const selectCaption = useEditor((s) => s.selectCaption);
   const moveFixture = useEditor((s) => s.moveFixture);
   const moveCaption = useEditor((s) => s.moveCaption);
+  const commitFixtureGeometry = useEditor((s) => s.commitFixtureGeometry);
+  const commitCaptionGeometry = useEditor((s) => s.commitCaptionGeometry);
+  const commitPropGeometry = useEditor((s) => s.commitPropGeometry);
   const formations = useEditor((s) => s.formations);
   const positions = useEditor((s) => s.positions);
   const selectedFormationId = useEditor((s) => s.selectedFormationId);
@@ -116,6 +129,12 @@ export function StageCanvas(): ReactElement {
   const [marquee, setMarquee] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(
     null,
   );
+  const [liveShape, setLiveShape] = useState<(ShapeBox & { id: string }) | null>(null);
+  const shapingRef = useRef(false);
+  const mapRef = useRef({
+    toMeters: (_x: number, _y: number): { x: number; y: number } => ({ x: 0, y: 0 }),
+    snapToGrid: false,
+  });
   const marqueeRef = useRef<{ x0: number; y0: number; moved: boolean } | null>(null);
   // Group drag: where every OTHER selected performer stood when the drag began.
   const groupDragRef = useRef<{
@@ -242,6 +261,60 @@ export function StageCanvas(): ReactElement {
     const y = (yPx - offsetY) / pxPerMeter;
     return flip ? { x: stageWidth - x, y: stageHeight - y } : { x, y };
   };
+  mapRef.current = { toMeters, snapToGrid };
+
+  const beginShapeEdit = (
+    which: HandleKind,
+    start: ShapeBox & { id: string },
+    commit: (box: ShapeBox) => void,
+  ): void => {
+    shapingRef.current = true;
+    let moved = false;
+    let latest: ShapeBox = start;
+    const pointOf = (ev: MouseEvent | TouchEvent): { x: number; y: number } | null => {
+      const stage = stageRef.current;
+      const rect = stage?.container().getBoundingClientRect();
+      if (stage == null || rect == null || rect.width === 0 || rect.height === 0) return null;
+      const src = 'touches' in ev ? (ev.touches[0] ?? ev.changedTouches[0]) : ev;
+      if (src === undefined) return null;
+      const x = ((src.clientX - rect.left) / rect.width) * stage.width();
+      const y = ((src.clientY - rect.top) / rect.height) * stage.height();
+      return mapRef.current.toMeters(x, y);
+    };
+    const apply = (ev: MouseEvent | TouchEvent): void => {
+      const p = pointOf(ev);
+      if (p === null) return;
+      const snap = mapRef.current.snapToGrid;
+      const next =
+        which === 'rotate'
+          ? { ...start, rotation: rotationFromPointer(start.x, start.y, p.x, p.y, snap) }
+          : resizeFromEdge(start, which, p.x, p.y, snap);
+      latest = next;
+      if (!moved) {
+        moved = true;
+        pushHistory();
+      }
+      setLiveShape({ id: start.id, ...next });
+    };
+    const end = (): void => {
+      window.removeEventListener('mousemove', apply);
+      window.removeEventListener('mouseup', end);
+      window.removeEventListener('touchmove', apply);
+      window.removeEventListener('touchend', end);
+      if (moved) commit(latest);
+      setLiveShape(null);
+      window.setTimeout(() => {
+        shapingRef.current = false;
+      }, 0);
+    };
+    window.addEventListener('mousemove', apply);
+    window.addEventListener('mouseup', end);
+    window.addEventListener('touchmove', apply, { passive: false });
+    window.addEventListener('touchend', end);
+  };
+
+  const shownBox = (id: string, box: ShapeBox): ShapeBox =>
+    liveShape !== null && liveShape.id === id ? liveShape : box;
 
   // While playing (or scrubbing), poses come from the timeline; while editing,
   // straight from the selected formation.
@@ -282,6 +355,7 @@ export function StageCanvas(): ReactElement {
   // Stage-level pointer handlers, shared by mouse and touch (touch-action is
   // disabled on the container so one-finger drags stay on the canvas).
   const onStagePointerDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): void => {
+    if (shapingRef.current) return;
     if ('touches' in e.evt && e.evt.touches.length > 1) return;
     if (annotateMode !== 'off' && !isPlaying && !readOnly) {
       const pointer = e.target.getStage()?.getPointerPosition();
@@ -519,17 +593,29 @@ export function StageCanvas(): ReactElement {
         {/* Fixed set pieces and text. They do not move between formations. */}
         <Layer listening={annotateMode === 'off'}>
           {fixtures.map((piece) => {
-            const px = toPx(piece.x, piece.y);
-            const wPx = piece.width * pxPerMeter;
-            const hPx = piece.height * pxPerMeter;
+            const box = shownBox(piece.id, fixtureBox(piece));
+            const px = toPx(box.x, box.y);
             const selected = selectedFixtureId === piece.id;
+            const editing = selected && !isPlaying && !readOnly;
             return (
-              <Group
+              <EditableShape
                 key={piece.id}
                 x={px.x}
                 y={px.y}
-                draggable={!isPlaying && !readOnly}
-                dragBoundFunc={dragBound}
+                rotation={shapeScreenDeg(box.rotation, flip)}
+                widthPx={box.width * pxPerMeter}
+                heightPx={box.height * pxPerMeter}
+                kind={fixtureShape(piece) === 'ellipse' ? 'ellipse' : 'rect'}
+                fill={piece.color}
+                stroke={piece.color}
+                opacity={0.35}
+                label={piece.label}
+                labelFill="#202124"
+                labelRotation={flip ? 180 : 0}
+                fontSize={12}
+                selected={selected}
+                draggable={editing && liveShape?.id !== piece.id}
+                dragBound={dragBound}
                 onDragStart={() => {
                   pushHistory();
                   selectFixture(piece.id);
@@ -538,62 +624,41 @@ export function StageCanvas(): ReactElement {
                   const m = toMeters(e.target.x(), e.target.y());
                   moveFixture(piece.id, m.x, m.y);
                 }}
-                onMouseDown={(e) => {
-                  e.cancelBubble = true;
-                  selectFixture(piece.id);
-                }}
-                onTouchStart={(e) => {
-                  e.cancelBubble = true;
-                  selectFixture(piece.id);
-                }}
-              >
-                <Rect
-                  x={-wPx / 2}
-                  y={-hPx / 2}
-                  width={wPx}
-                  height={hPx}
-                  fill={piece.color}
-                  opacity={0.35}
-                  stroke={piece.color}
-                  strokeWidth={2}
-                />
-                {selected && (
-                  <Rect
-                    x={-wPx / 2 - 4}
-                    y={-hPx / 2 - 4}
-                    width={wPx + 8}
-                    height={hPx + 8}
-                    stroke="#1a73e8"
-                    strokeWidth={1.5}
-                    dash={[4, 4]}
-                    listening={false}
-                  />
-                )}
-                <Text
-                  x={-wPx / 2}
-                  y={-7}
-                  width={wPx}
-                  align="center"
-                  text={piece.label}
-                  fontFamily="'Roboto Mono', monospace"
-                  fontSize={12}
-                  fill="#202124"
-                  listening={false}
-                />
-              </Group>
+                onSelect={() => selectFixture(piece.id)}
+                showHandles={editing}
+                onHandleDown={(which) =>
+                  beginShapeEdit(which, { ...box, id: piece.id }, (next) =>
+                    commitFixtureGeometry(piece.id, next),
+                  )
+                }
+              />
             );
           })}
           {captions.map((piece) => {
-            const px = toPx(piece.x, piece.y);
-            const box = Math.max(48, piece.text.length * 8);
+            const box = shownBox(piece.id, captionBox(piece));
+            const px = toPx(box.x, box.y);
             const selected = selectedCaptionId === piece.id;
+            const editing = selected && !isPlaying && !readOnly;
             return (
-              <Group
+              <EditableShape
                 key={piece.id}
                 x={px.x}
                 y={px.y}
-                draggable={!isPlaying && !readOnly}
-                dragBoundFunc={dragBound}
+                rotation={shapeScreenDeg(box.rotation, flip)}
+                widthPx={box.width * pxPerMeter}
+                heightPx={box.height * pxPerMeter}
+                kind={fixtureShape(piece) === 'ellipse' ? 'ellipse' : 'rect'}
+                fill="#ffffff"
+                stroke={piece.color}
+                opacity={0.94}
+                label={piece.text}
+                labelFill={piece.color}
+                labelRotation={flip ? 180 : 0}
+                fontSize={13}
+                corner
+                selected={selected}
+                draggable={editing && liveShape?.id !== piece.id}
+                dragBound={dragBound}
                 onDragStart={() => {
                   pushHistory();
                   selectCaption(piece.id);
@@ -602,45 +667,20 @@ export function StageCanvas(): ReactElement {
                   const m = toMeters(e.target.x(), e.target.y());
                   moveCaption(piece.id, m.x, m.y);
                 }}
-                onMouseDown={(e) => {
-                  e.cancelBubble = true;
-                  selectCaption(piece.id);
-                }}
-                onTouchStart={(e) => {
-                  e.cancelBubble = true;
-                  selectCaption(piece.id);
-                }}
-              >
-                <Rect
-                  x={-box / 2}
-                  y={-12}
-                  width={box}
-                  height={24}
-                  fill="#ffffff"
-                  opacity={0.94}
-                  cornerRadius={3}
-                  stroke={selected ? '#1a73e8' : piece.color}
-                  strokeWidth={selected ? 1.5 : 1}
-                />
-                <Text
-                  x={-box / 2}
-                  y={-7}
-                  width={box}
-                  align="center"
-                  text={piece.text}
-                  fontFamily="'Roboto Mono', monospace"
-                  fontSize={13}
-                  fill={piece.color}
-                  listening={false}
-                />
-              </Group>
+                onSelect={() => selectCaption(piece.id)}
+                showHandles={editing}
+                onHandleDown={(which) =>
+                  beginShapeEdit(which, { ...box, id: piece.id }, (next) =>
+                    commitCaptionGeometry(piece.id, next),
+                  )
+                }
+              />
             );
           })}
         </Layer>
 
-        {/* Props: scenery footprints under the dancers. The outer group
-            carries position + drag; only the inner group rotates, so the
-            name label stays readable. */}
+        {/* Formation objects and texts. The footprint rotates with its angle,
+            and the label turns with it. */}
         <Layer listening={annotateMode === 'off'}>
           {props.map((prop) => {
             const pose: StagePose = livePoses?.get(prop.id) ?? {
@@ -649,17 +689,46 @@ export function StageCanvas(): ReactElement {
               rotation: editPositions[prop.id]?.rotation ?? 0,
             };
             if (!Number.isFinite(pose.x) || !Number.isFinite(pose.y)) return null;
-            const px = toPx(pose.x, pose.y);
+            const box = shownBox(prop.id, {
+              x: pose.x,
+              y: pose.y,
+              width: prop.width,
+              height: prop.height,
+              rotation: pose.rotation,
+            });
+            const px = toPx(box.x, box.y);
             const selected = selectedPropId === prop.id;
-            const wPx = prop.width * pxPerMeter;
-            const hPx = prop.height * pxPerMeter;
+            const editing = selected && !isPlaying && !readOnly;
+            const textOnly = prop.textOnly === true;
+            const ellipse = prop.kind === 'circle';
             return (
-              <Group
+              <EditableShape
                 key={prop.id}
                 x={px.x}
                 y={px.y}
-                draggable={!isPlaying && !readOnly}
-                dragBoundFunc={dragBound}
+                rotation={shapeScreenDeg(box.rotation, flip)}
+                widthPx={box.width * pxPerMeter}
+                heightPx={box.height * pxPerMeter}
+                kind={ellipse ? 'ellipse' : prop.kind === 'triangle' ? 'polygon' : 'rect'}
+                points={
+                  prop.kind === 'triangle'
+                    ? propOutline('triangle', box.width, box.height).flatMap(([xM, yM]) => [
+                        xM * pxPerMeter,
+                        yM * pxPerMeter,
+                      ])
+                    : undefined
+                }
+                fill={textOnly ? '#ffffff' : prop.color}
+                stroke={prop.color}
+                opacity={textOnly ? 0.94 : 0.25}
+                label={prop.name}
+                labelFill={textOnly ? prop.color : '#202124'}
+                labelRotation={flip ? 180 : 0}
+                fontSize={textOnly ? 13 : 11}
+                corner={textOnly}
+                selected={selected}
+                draggable={editing && liveShape?.id !== prop.id}
+                dragBound={dragBound}
                 onDragStart={() => {
                   pushHistory();
                   selectProp(prop.id);
@@ -676,62 +745,14 @@ export function StageCanvas(): ReactElement {
                   const m = toMeters(e.target.x(), e.target.y());
                   setPositionLive(selectedFormationId, prop.id, m.x, m.y);
                 }}
-                onMouseDown={(e) => {
-                  e.cancelBubble = true;
-                  selectProp(prop.id);
-                }}
-                onTouchStart={(e) => {
-                  e.cancelBubble = true;
-                  selectProp(prop.id);
-                }}
-              >
-                <Group rotation={pose.rotation + (flip ? 180 : 0)}>
-                  {prop.kind === 'circle' ? (
-                    <Ellipse
-                      radiusX={wPx / 2}
-                      radiusY={hPx / 2}
-                      fill={prop.color}
-                      opacity={0.25}
-                      stroke={prop.color}
-                      strokeWidth={2}
-                    />
-                  ) : (
-                    <Line
-                      points={propOutline(prop.kind, prop.width, prop.height).flatMap(
-                        ([xM, yM]) => [xM * pxPerMeter, yM * pxPerMeter],
-                      )}
-                      closed
-                      fill={prop.color}
-                      opacity={0.25}
-                      stroke={prop.color}
-                      strokeWidth={2}
-                    />
-                  )}
-                </Group>
-                {selected && (
-                  <Rect
-                    x={-wPx / 2 - 4}
-                    y={-hPx / 2 - 4}
-                    width={wPx + 8}
-                    height={hPx + 8}
-                    stroke="#1a73e8"
-                    strokeWidth={1.5}
-                    dash={[4, 4]}
-                    listening={false}
-                  />
-                )}
-                <Text
-                  x={-wPx / 2}
-                  y={-6}
-                  width={wPx}
-                  align="center"
-                  text={prop.name}
-                  fontFamily="'Roboto Mono', monospace"
-                  fontSize={11}
-                  fill={prop.color}
-                  listening={false}
-                />
-              </Group>
+                onSelect={() => selectProp(prop.id)}
+                showHandles={editing}
+                onHandleDown={(which) =>
+                  beginShapeEdit(which, { ...box, id: prop.id }, (next) =>
+                    commitPropGeometry(prop.id, selectedFormationId, next),
+                  )
+                }
+              />
             );
           })}
         </Layer>

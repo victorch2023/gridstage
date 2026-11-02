@@ -266,6 +266,27 @@ input[type='color'] {
   cursor: pointer;
 }
 
+.color-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.color-swatch {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 4px;
+  border: 1px solid var(--panel-edge);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.color-swatch[aria-pressed='true'] {
+  outline: 2px solid var(--tungsten);
+  outline-offset: 1px;
+}
+
 .mono {
   font-family: var(--font-data);
   font-size: 12px;

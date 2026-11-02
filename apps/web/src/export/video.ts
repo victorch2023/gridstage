@@ -1,6 +1,7 @@
 import { exportableState } from '../state/store';
 import { formatEightCount, formatTimecode, posesAtTime, showEndMs } from '../state/interpolate';
 import { propOutline } from '../state/props';
+import { captionSize, fixtureShape, pieceRotation } from '../state/shapeEdit';
 import { timelineMsToVideoSeconds, useRefVideo } from '../state/refVideo';
 import { safeFilename } from './filename';
 import { messages } from '../i18n';
@@ -280,31 +281,54 @@ export function build2dRenderer(
       const hPx = piece.height * scale;
       ctx.save();
       ctx.translate(x, y);
-      if (flip) ctx.rotate(Math.PI);
+      ctx.rotate(((pieceRotation(piece) + (flip ? 180 : 0)) * Math.PI) / 180);
+      ctx.beginPath();
+      if (fixtureShape(piece) === 'ellipse') {
+        ctx.ellipse(0, 0, wPx / 2, hPx / 2, 0, 0, Math.PI * 2);
+      } else {
+        ctx.rect(-wPx / 2, -hPx / 2, wPx, hPx);
+      }
+      ctx.save();
       ctx.globalAlpha = 0.35;
       ctx.fillStyle = piece.color;
-      ctx.fillRect(-wPx / 2, -hPx / 2, wPx, hPx);
-      ctx.globalAlpha = 1;
+      ctx.fill();
+      ctx.restore();
       ctx.strokeStyle = piece.color;
       ctx.lineWidth = 2;
-      ctx.strokeRect(-wPx / 2, -hPx / 2, wPx, hPx);
+      ctx.stroke();
       ctx.fillStyle = INK;
       ctx.font = `12px ${MONO}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
+      if (flip) ctx.rotate(Math.PI);
       ctx.fillText(piece.label, 0, 0);
       ctx.restore();
     }
     for (const piece of doc.captions ?? []) {
+      const size = captionSize(piece);
       const x = originX + (flip ? stageWidth - piece.x : piece.x) * scale;
       const y = originY + (flip ? stageHeight - piece.y : piece.y) * scale;
+      const wPx = size.width * scale;
+      const hPx = size.height * scale;
       ctx.save();
       ctx.translate(x, y);
-      if (flip) ctx.rotate(Math.PI);
+      ctx.rotate(((pieceRotation(piece) + (flip ? 180 : 0)) * Math.PI) / 180);
+      ctx.beginPath();
+      if (fixtureShape(piece) === 'ellipse') {
+        ctx.ellipse(0, 0, wPx / 2, hPx / 2, 0, 0, Math.PI * 2);
+      } else {
+        ctx.rect(-wPx / 2, -hPx / 2, wPx, hPx);
+      }
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      ctx.strokeStyle = piece.color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
       ctx.fillStyle = piece.color;
       ctx.font = `16px ${SANS}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
+      if (flip) ctx.rotate(Math.PI);
       ctx.fillText(piece.text, 0, 0);
       ctx.restore();
     }

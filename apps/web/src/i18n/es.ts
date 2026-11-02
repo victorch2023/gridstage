@@ -17,6 +17,13 @@ export const es: Messages = {
     chinese: '中文',
   },
 
+  colors: {
+    red: 'Rojo',
+    black: 'Negro',
+    yellow: 'Amarillo',
+    fuchsia: 'Fucsia',
+  },
+
   defaults: {
     performanceTitle: 'Actuación sin título',
     dancer: (n: number): string => `Bailarín ${n}`,
@@ -208,7 +215,7 @@ export const es: Messages = {
     close: 'Cerrar',
     fixturesTitle: 'Objetos del escenario',
     fixturesHint:
-      'Se quedan en el mismo sitio en todas las formaciones: un mueble, una tarima, un letrero. Cierra este diálogo para arrastrarlos.',
+      'Se quedan en el mismo sitio en todas las formaciones: un mueble, una tarima, un letrero. Cierra este diálogo para arrastrarlos, estirar un borde o girarlos.',
     addFixture: 'Añadir rectángulo',
     addCaption: 'Añadir texto',
     fixtureLabel: 'Etiqueta',
@@ -219,6 +226,12 @@ export const es: Messages = {
     pieceWidth: 'Ancho (m)',
     pieceDepth: 'Profundidad (m)',
     pieceColor: 'Color',
+    shape: 'Forma',
+    shapeRect: 'Rectángulo',
+    shapeEllipse: 'Círculo',
+    rotation: 'Rotación (°)',
+    shapeHint:
+      'Arrastra un borde para cambiar el tamaño. Estira un lado del círculo y se vuelve elipse.',
   },
 
   beat: {
@@ -441,8 +454,12 @@ export const es: Messages = {
     add: 'Objetos (etiquetables)',
     addTitle:
       'Un rectángulo con etiqueta que pertenece a la formación. Puedes moverlo en cada formación, como a un bailarín.',
+    addText: 'Texto',
+    addTextTitle:
+      'Un texto de esta formación. Puedes girarlo, cambiar su forma y colocarlo distinto en cada formación.',
     listAria: 'Objetos de la formación',
     sectionTitle: 'Objeto de la formación',
+    textSection: 'Texto de la formación',
     name: 'Etiqueta',
     kind: 'Forma',
     kindRect: 'Rectángulo',
