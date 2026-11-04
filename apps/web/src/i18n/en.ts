@@ -414,6 +414,8 @@ export const en = {
     name: 'Name',
     role: 'Role',
     rolePlaceholder: 'e.g. captain, flyer',
+    groupMixed: 'Several',
+    groupFieldTitle: 'What you type is applied to every selected performer',
     activeLabel: 'Performing this run',
     activeTitle:
       'Uncheck to mark an understudy or absence: the dancer keeps every position but is hidden from the stage, exports and analysis',
@@ -586,7 +588,7 @@ export const en = {
     pinPrompt: 'Note text:',
     canvasAria: 'Stage canvas',
     zoomHint:
-      'Drag empty stage to grab and move it. Scroll, or pinch with two fingers, to zoom. Shift-drag selects several.',
+      'Drag empty stage to select several. Hold Space, or the middle mouse button, and drag to move the stage. On a touchscreen, one finger moves it. Scroll or pinch to zoom.',
     audience: 'AUDIENCE',
     loading3d: 'Loading 3D preview…',
     to3dTitle: '3D preview (view only)',

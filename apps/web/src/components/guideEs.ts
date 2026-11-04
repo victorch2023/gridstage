@@ -68,9 +68,7 @@ export const GUIDE_ES: GuideSection[] = [
       },
       {
         title: 'Herramientas del lienzo',
-        body: [
-          'Arriba a la derecha del escenario: Ajustar (rejilla), Lápiz, Nota y el cambio a 3D.',
-        ],
+        body: ['Arriba a la derecha del escenario: Lápiz, Nota y el cambio a 3D.'],
       },
       {
         title: 'Deshacer y rehacer',
@@ -90,17 +88,11 @@ export const GUIDE_ES: GuideSection[] = [
       },
       {
         title: 'BPM y tempo',
-        body: [
-          'En Pulsos… escribe los pulsos por minuto.',
-          'Si no lo sabes, Calibrar BPM: toca al ritmo y el tempo se calcula solo.',
-        ],
+        body: ['La ventana Pulsos está oculta por ahora. El audio y las formaciones siguen igual.'],
       },
       {
         title: 'Marcadores y tramos de cuenta',
-        body: [
-          'Marca pulsos y delimita los tramos que se cuentan en ochos.',
-          'La música casi nunca entra en la cuenta 1. Cada tramo alinea su propia cuenta 1.',
-        ],
+        body: ['Los tramos de cuenta vuelven junto con Pulsos.'],
       },
       {
         title: 'Metrónomo',
@@ -147,8 +139,8 @@ export const GUIDE_ES: GuideSection[] = [
       {
         title: 'Recta o curva',
         body: [
-          'Cada formación elige cómo se llega a la siguiente: lineal o curva.',
-          'La curva pasa por un tirador. En el ejemplo, de la 1 a la 2 es recta y de la 2 a la 3 es curva.',
+          'El selector de transición (lineal o curva) está oculto por ahora.',
+          'Si una formación ya iba en curva, el tirador del recorrido sigue en el plano.',
         ],
       },
       {
@@ -175,7 +167,7 @@ export const GUIDE_ES: GuideSection[] = [
     features: [
       {
         title: 'Plantillas',
-        body: ['Un clic coloca una línea, una V, un círculo o una cuadrícula.'],
+        body: ['Las plantillas y «Sugerir formaciones» están ocultas por ahora.'],
         shot: 's4-formation.png',
       },
       {
@@ -205,7 +197,7 @@ export const GUIDE_ES: GuideSection[] = [
       {
         title: 'Marco, arrastre y desenredar',
         body: [
-          'Arrastra en el suelo vacío para agarrar el plano y moverlo. Con Mayús, el mismo arrastre encuadra a varios para moverlos juntos.',
+          'Arrastra en el suelo vacío para encuadrar a varios y moverlos juntos. Mantén la barra espaciadora, o el botón central, y arrastra para mover el plano. En el teléfono basta un dedo.',
           'Desenredar cambia quién va a cada sitio para que los recorridos no se crucen y la distancia sea mínima.',
         ],
       },

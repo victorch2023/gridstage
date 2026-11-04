@@ -826,7 +826,10 @@ test('untangle swaps crossing walk paths to the minimal-travel assignment', asyn
   expect(Math.abs((p2?.x ?? 0) - 9)).toBeLessThan(0.4);
 });
 
-test('curve transition: dragging the handle stores a Bézier control point', async ({ page }) => {
+// Transition picker is parked (SHOW_FORMATION_ARRANGE). Restore with the control.
+test.skip('curve transition: dragging the handle stores a Bézier control point', async ({
+  page,
+}) => {
   await page.getByText('Add performer').click(); // D1 @ (1.5, 6.5)
   await page.getByText('Add formation').click(); // F2 selected, copies F1
 
@@ -1148,15 +1151,13 @@ test('marquee selects several performers and drags them together', async ({ page
   await page.getByText('Add performer').click();
   await page.getByText('Add performer').click();
 
-  // Shift-drag rubber-bands the floor: a plain drag now pans the plan.
+  // A plain drag rubber-bands the floor. Space or the middle button pans.
   const a = meterToPx(0.4, 5.2);
   const b = meterToPx(11.5, 7.8);
-  await page.keyboard.down('Shift');
   await page.mouse.move(a.x, a.y);
   await page.mouse.down();
   await page.mouse.move(b.x, b.y, { steps: 8 });
   await page.mouse.up();
-  await page.keyboard.up('Shift');
   await expect(page.getByText(/3 selected/)).toBeVisible();
 
   const before = await readDoc(page);
@@ -1188,7 +1189,8 @@ test('whole-show path toggle shows without crashing', async ({ page }) => {
   await expect(page.getByLabel('Stage canvas')).toBeVisible();
 });
 
-test('count segments anchor count 1 away from 0:00', async ({ page }) => {
+// Pulsos is parked (SHOW_BEATS). Restore this test with the button.
+test.skip('count segments anchor count 1 away from 0:00', async ({ page }) => {
   // BPM and count segments live in the (non-modal) Beats dialog now.
   await page.getByRole('button', { name: 'Beats…' }).click();
   await page.locator('#stage-bpm').fill('120');
@@ -1214,7 +1216,7 @@ test('count segments anchor count 1 away from 0:00', async ({ page }) => {
   await expect(page.getByLabel('Playhead time')).toContainText('8ct 1 · 5');
 });
 
-test('tap tempo calibrates BPM from clicks', async ({ page }) => {
+test.skip('tap tempo calibrates BPM from clicks', async ({ page }) => {
   await page.getByRole('button', { name: 'Beats…' }).click();
   await page.getByRole('button', { name: 'Calibrate BPM' }).click(); // first tap = the downbeat
   for (let i = 0; i < 7; i++) {
@@ -1359,7 +1361,8 @@ test('audience side is selectable and persists in the doc', async ({ page }) => 
   expect((doc.performance as { audienceAt?: string }).audienceAt).toBe('top');
 });
 
-test('formation suggestions: apply changes positions, undo restores', async ({ page }) => {
+// Suggestions are parked (SHOW_FORMATION_ARRANGE). Restore with the button.
+test.skip('formation suggestions: apply changes positions, undo restores', async ({ page }) => {
   await page.getByText('Add performer').click();
   await page.getByText('Add performer').click();
   await page.getByText('Add performer').click();
@@ -1547,7 +1550,8 @@ test('formation presets: save current shape, apply it in a new formation', async
   expect(Math.abs((xs[1] ?? 0) - 9)).toBeLessThan(0.05);
 });
 
-test('grid snap: dragged performer lands on the 0.5m lattice', async ({ page }) => {
+// Ajustar is parked (SHOW_STAGE_SNAP). Restore this test with the button.
+test.skip('grid snap: dragged performer lands on the 0.5m lattice', async ({ page }) => {
   await page.getByText('Add performer').click();
   await page.getByRole('button', { name: 'Snap', exact: true }).click();
 
@@ -1571,7 +1575,7 @@ test('grid snap: dragged performer lands on the 0.5m lattice', async ({ page }) 
   expect(Math.abs((pos?.y ?? 0) - 3)).toBeLessThanOrEqual(0.5);
 });
 
-test('metronome toggle needs a BPM and latches on', async ({ page }) => {
+test.skip('metronome toggle needs a BPM and latches on', async ({ page }) => {
   const metro = page.getByRole('button', { name: 'Click', exact: true });
   await expect(metro).toBeDisabled();
   await page.getByRole('button', { name: 'Beats…' }).click();

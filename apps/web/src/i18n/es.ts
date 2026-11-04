@@ -419,6 +419,8 @@ export const es: Messages = {
     name: 'Nombre',
     role: 'Rol',
     rolePlaceholder: 'p. ej. capitán, flyer',
+    groupMixed: 'Varios',
+    groupFieldTitle: 'Lo que escribas se aplica a todos los bailarines seleccionados',
     activeLabel: 'Actúa en esta pasada',
     activeTitle:
       'Desmarca para un suplente o una ausencia: el bailarín conserva cada posición, pero se oculta del escenario, las exportaciones y el análisis',
@@ -596,7 +598,7 @@ export const es: Messages = {
     pinPrompt: 'Texto de la nota:',
     canvasAria: 'Lienzo del escenario',
     zoomHint:
-      'Arrastra un sitio vacío para agarrar y mover el escenario. Rueda, o dos dedos, para acercar. Mayús y arrastrar selecciona a varios.',
+      'Arrastra en un sitio vacío para seleccionar a varios. Mantén la barra espaciadora, o el botón central, y arrastra para mover el escenario. En el teléfono, un dedo lo mueve. Rueda o dos dedos acercan.',
     audience: 'AUDIENCIA',
     loading3d: 'Cargando la vista 3D…',
     to3dTitle: 'Vista 3D (solo lectura)',

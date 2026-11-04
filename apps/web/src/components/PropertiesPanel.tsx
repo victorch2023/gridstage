@@ -19,6 +19,7 @@ import { NumberField } from './NumberField';
 import { ColorField } from './ColorField';
 import { StageSettingsDialog } from './StageSettingsDialog';
 import { useT } from '../i18n';
+import { SHOW_FORMATION_ARRANGE } from '../parkedFeatures';
 import { captionSize, fixtureShape, pieceRotation } from '../state/shapeEdit';
 import { byOrder } from '../state/interpolate';
 import { normalizeBadge } from '../state/badge';
@@ -225,8 +226,51 @@ function PerformerSection(): ReactElement | null {
   );
 }
 
+/** Shared text when every selected dancer has the same value; null when they differ. */
+function sharedText(values: readonly string[]): string | null {
+  const first = values[0];
+  if (first === undefined) return '';
+  return values.every((value) => value === first) ? first : null;
+}
+
+function GroupTextField({
+  id,
+  label,
+  field,
+  values,
+  emptyPlaceholder,
+}: {
+  id: string;
+  label: string;
+  field: 'name' | 'role';
+  values: readonly string[];
+  emptyPlaceholder?: string;
+}): ReactElement {
+  const t = useT();
+  const updatePerformers = useEditor((s) => s.updatePerformers);
+  const selectedPerformerIds = useEditor((s) => s.selectedPerformerIds);
+  const shared = sharedText(values);
+  return (
+    <div className="field">
+      <label htmlFor={id}>{label}</label>
+      <input
+        id={id}
+        className="group-edit"
+        type="text"
+        title={t.performer.groupFieldTitle}
+        value={shared ?? ''}
+        placeholder={shared === null ? t.performer.groupMixed : emptyPlaceholder}
+        onChange={(e) => updatePerformers(selectedPerformerIds, { [field]: e.target.value })}
+      />
+    </div>
+  );
+}
+
 function MultiSelectSection({ count }: { count: number }): ReactElement {
   const t = useT();
+  const performers = useEditor((s) => s.performers);
+  const selectedPerformerIds = useEditor((s) => s.selectedPerformerIds);
+  const selected = performers.filter((p) => selectedPerformerIds.includes(p.id));
   const swapSelected = useEditor((s) => s.swapSelected);
   const alignSelected = useEditor((s) => s.alignSelected);
   const distributeSelected = useEditor((s) => s.distributeSelected);
@@ -238,6 +282,19 @@ function MultiSelectSection({ count }: { count: number }): ReactElement {
       <div className="panel-title">{t.performer.titleMany}</div>
       <div className="panel-section">
         <p className="empty-note">{t.performer.multiSelected(count)}</p>
+        <GroupTextField
+          id="group-name"
+          label={t.performer.name}
+          field="name"
+          values={selected.map((p) => p.name)}
+        />
+        <GroupTextField
+          id="group-role"
+          label={t.performer.role}
+          field="role"
+          values={selected.map((p) => p.role)}
+          emptyPlaceholder={t.performer.rolePlaceholder}
+        />
         <span className="field-label expert-only-ui">{t.performer.tools}</span>
         {count === 2 && (
           <button
@@ -492,45 +549,51 @@ function FormationSection(): ReactElement | null {
             onChange={(e) => updateFormation(formation.id, { name: e.target.value })}
           />
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <div className="field" style={{ flex: 1 }}>
-            <label htmlFor="form-start">{t.formation.startLabel}</label>
-            <NumberField
-              id="form-start"
-              min={0}
-              step={0.1}
-              decimals={1}
-              value={formation.startTimeMs / 1000}
-              onCommit={(v) => setFormationStart(formation.id, v * 1000)}
-            />
-          </div>
-          <div className="field" style={{ flex: 1 }}>
-            <label htmlFor="form-dur">{t.formation.holdLabel}</label>
-            <NumberField
-              id="form-dur"
-              min={0}
-              step={0.1}
-              decimals={1}
-              value={formation.durationMs / 1000}
-              onCommit={(v) => updateFormation(formation.id, { durationMs: Math.max(0, v * 1000) })}
-            />
-          </div>
-          {prevEndMs !== null && (
+        {SHOW_FORMATION_ARRANGE && (
+          <div style={{ display: 'flex', gap: 8 }}>
             <div className="field" style={{ flex: 1 }}>
-              <label htmlFor="form-walkin" title={t.formation.walkInTitle}>
-                {t.formation.walkInLabel}
-              </label>
+              <label htmlFor="form-start">{t.formation.startLabel}</label>
               <NumberField
-                id="form-walkin"
+                id="form-start"
                 min={0}
                 step={0.1}
                 decimals={1}
-                value={Math.max(0, formation.startTimeMs - prevEndMs) / 1000}
-                onCommit={(v) => setFormationStart(formation.id, prevEndMs + Math.max(0, v) * 1000)}
+                value={formation.startTimeMs / 1000}
+                onCommit={(v) => setFormationStart(formation.id, v * 1000)}
               />
             </div>
-          )}
-        </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label htmlFor="form-dur">{t.formation.holdLabel}</label>
+              <NumberField
+                id="form-dur"
+                min={0}
+                step={0.1}
+                decimals={1}
+                value={formation.durationMs / 1000}
+                onCommit={(v) =>
+                  updateFormation(formation.id, { durationMs: Math.max(0, v * 1000) })
+                }
+              />
+            </div>
+            {prevEndMs !== null && (
+              <div className="field" style={{ flex: 1 }}>
+                <label htmlFor="form-walkin" title={t.formation.walkInTitle}>
+                  {t.formation.walkInLabel}
+                </label>
+                <NumberField
+                  id="form-walkin"
+                  min={0}
+                  step={0.1}
+                  decimals={1}
+                  value={Math.max(0, formation.startTimeMs - prevEndMs) / 1000}
+                  onCommit={(v) =>
+                    setFormationStart(formation.id, prevEndMs + Math.max(0, v) * 1000)
+                  }
+                />
+              </div>
+            )}
+          </div>
+        )}
         <div className="field expert-only-ui">
           <label htmlFor="form-color" title={t.formation.colorTitle}>
             {t.formation.colorLabel}
@@ -553,54 +616,60 @@ function FormationSection(): ReactElement | null {
             )}
           </div>
         </div>
-        <div className="field">
-          <label htmlFor="form-transition">{t.formation.transitionLabel}</label>
-          <select
-            id="form-transition"
-            value={formation.transitionType}
-            onChange={(e) =>
-              updateFormation(formation.id, {
-                transitionType: e.target.value === 'curve' ? 'curve' : 'linear',
-              })
-            }
-          >
-            <option value="linear">{t.formation.transitionLinear}</option>
-            <option value="curve">{t.formation.transitionCurve}</option>
-          </select>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button type="button" className="btn" onClick={() => moveFormation(formation.id, -1)}>
-            {t.formation.earlier}
-          </button>
-          <button type="button" className="btn" onClick={() => moveFormation(formation.id, 1)}>
-            {t.formation.later}
-          </button>
-        </div>
-        <div className="field">
-          <label htmlFor="form-template">{t.formation.templateLabel}</label>
-          <div style={{ display: 'flex', gap: 8 }}>
+        {SHOW_FORMATION_ARRANGE && (
+          <div className="field">
+            <label htmlFor="form-transition">{t.formation.transitionLabel}</label>
             <select
-              id="form-template"
-              value={templateKind}
-              onChange={(e) => setTemplateKind(e.target.value as TemplateKind)}
+              id="form-transition"
+              value={formation.transitionType}
+              onChange={(e) =>
+                updateFormation(formation.id, {
+                  transitionType: e.target.value === 'curve' ? 'curve' : 'linear',
+                })
+              }
             >
-              {Object.entries(t.formation.templates).map(([kind, label]) => (
-                <option key={kind} value={kind}>
-                  {label}
-                </option>
-              ))}
+              <option value="linear">{t.formation.transitionLinear}</option>
+              <option value="curve">{t.formation.transitionCurve}</option>
             </select>
-            <button
-              type="button"
-              className="btn"
-              disabled={!hasPerformers}
-              title={hasPerformers ? t.formation.applyTitle : t.formation.applyDisabledTitle}
-              onClick={() => applyTemplate(templateKind)}
-            >
-              {t.formation.apply}
+          </div>
+        )}
+        {SHOW_FORMATION_ARRANGE && (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" className="btn" onClick={() => moveFormation(formation.id, -1)}>
+              {t.formation.earlier}
+            </button>
+            <button type="button" className="btn" onClick={() => moveFormation(formation.id, 1)}>
+              {t.formation.later}
             </button>
           </div>
-        </div>
+        )}
+        {SHOW_FORMATION_ARRANGE && (
+          <div className="field">
+            <label htmlFor="form-template">{t.formation.templateLabel}</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <select
+                id="form-template"
+                value={templateKind}
+                onChange={(e) => setTemplateKind(e.target.value as TemplateKind)}
+              >
+                {Object.entries(t.formation.templates).map(([kind, label]) => (
+                  <option key={kind} value={kind}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="btn"
+                disabled={!hasPerformers}
+                title={hasPerformers ? t.formation.applyTitle : t.formation.applyDisabledTitle}
+                onClick={() => applyTemplate(templateKind)}
+              >
+                {t.formation.apply}
+              </button>
+            </div>
+          </div>
+        )}
         <div className="field expert-only-ui">
           <label htmlFor="form-preset">{t.presets.label}</label>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -685,16 +754,18 @@ function FormationSection(): ReactElement | null {
         >
           {t.formation.mirror}
         </button>
-        <button
-          type="button"
-          className="btn"
-          disabled={!hasPerformers}
-          title={t.suggest.buttonTitle}
-          onClick={onSuggest}
-        >
-          {t.suggest.button}
-        </button>
-        {suggestions !== null && suggestions.length > 0 && (
+        {SHOW_FORMATION_ARRANGE && (
+          <button
+            type="button"
+            className="btn"
+            disabled={!hasPerformers}
+            title={t.suggest.buttonTitle}
+            onClick={onSuggest}
+          >
+            {t.suggest.button}
+          </button>
+        )}
+        {SHOW_FORMATION_ARRANGE && suggestions !== null && suggestions.length > 0 && (
           <div className="field" aria-label={t.suggest.listAria}>
             {suggestions.map((suggestion) => (
               <div key={suggestion.kind} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

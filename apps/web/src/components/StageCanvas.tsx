@@ -36,9 +36,16 @@ import {
 import type { ShapeBox } from '../state/shapeEdit';
 import { EditableShape } from './ShapeHandles';
 import type { HandleKind } from './ShapeHandles';
-import { IDENTITY_STAGE_VIEW, panView, wheelZoomFactor, zoomViewAt } from '../state/stageView';
+import {
+  IDENTITY_STAGE_VIEW,
+  noteSpacePan,
+  panView,
+  wheelZoomFactor,
+  zoomViewAt,
+} from '../state/stageView';
 import type { StageZoomLayout } from '../state/stageView';
 import { useT } from '../i18n';
+import { SHOW_STAGE_SNAP } from '../parkedFeatures';
 
 const CURSOR_BROADCAST_MS = 80;
 
@@ -121,12 +128,12 @@ export function StageCanvas(): ReactElement {
   const removeAnnotation = useEditor((s) => s.removeAnnotation);
   const peers = usePeers();
   const backgroundImage = useStageBackground((s) => s.image);
-  const snapToGrid = useLayout((s) => s.snapToGrid);
+  const snapToGrid = useLayout((s) => s.snapToGrid) && SHOW_STAGE_SNAP;
   const lastCursorSentRef = useRef(0);
 
-  // Marquee (rubber-band) selection: Shift-drag on empty floor.
-  // A plain drag (and one finger on a touchscreen) grabs the whole plan instead.
-  // A plain click (no movement past the threshold) still just deselects.
+  // Marquee is the normal empty-floor drag. Space+drag and the middle button
+  // grab the plan; one finger does that on a touchscreen. A click that never
+  // passes the movement threshold still just deselects.
   const [marquee, setMarquee] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(
     null,
   );
@@ -146,7 +153,11 @@ export function StageCanvas(): ReactElement {
     moved: boolean;
   } | null>(null);
   const panCleanupRef = useRef<(() => void) | null>(null);
-  const cursorRef = useRef('grab');
+  const spaceHeldRef = useRef(false);
+  const cursorRef = useRef('default');
+  const beginPanRef = useRef<(clientX: number, clientY: number, deselectIfClick: boolean) => void>(
+    () => {},
+  );
   // Re-apply after renders (playback ticks) so a hover cursor is not reset.
   useEffect(() => {
     const node = stageRef.current?.container();
@@ -209,9 +220,21 @@ export function StageCanvas(): ReactElement {
       panCleanupRef.current?.();
       panCleanupRef.current = null;
       panRef.current = null;
-      cursorRef.current = 'grab';
+      cursorRef.current = spaceHeldRef.current ? 'grab' : 'default';
       const node = stageRef.current?.container();
-      if (node) node.style.cursor = 'grab';
+      if (node) node.style.cursor = cursorRef.current;
+    };
+    // Space or the middle button grabs the plan even when the pointer is on a dancer.
+    const onGrabMouseDown = (e: MouseEvent): void => {
+      const grab = e.button === 1 || (e.button === 0 && spaceHeldRef.current);
+      if (!grab) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (spaceHeldRef.current) noteSpacePan();
+      beginPanRef.current(e.clientX, e.clientY, false);
+    };
+    const onAuxClick = (e: MouseEvent): void => {
+      if (e.button === 1) e.preventDefault();
     };
     const onTouchMove = (e: TouchEvent): void => {
       if (e.touches.length < 2) return;
@@ -231,17 +254,39 @@ export function StageCanvas(): ReactElement {
     const onTouchEnd = (e: TouchEvent): void => {
       if (e.touches.length < 2) pinchRef.current = null;
     };
+    const onSpace = (e: KeyboardEvent, down: boolean): void => {
+      if (e.code !== 'Space') return;
+      const tag = (e.target as HTMLElement | null)?.tagName ?? '';
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+      if ((e.target as HTMLElement | null)?.isContentEditable) return;
+      if (down && e.repeat) return;
+      spaceHeldRef.current = down;
+      if (panRef.current) return;
+      cursorRef.current = down ? 'grab' : 'default';
+      const node = stageRef.current?.container();
+      if (node) node.style.cursor = cursorRef.current;
+    };
     el.addEventListener('wheel', onWheel, { passive: false });
+    el.addEventListener('mousedown', onGrabMouseDown, { capture: true });
+    el.addEventListener('auxclick', onAuxClick);
     el.addEventListener('touchstart', onTouchStart, { capture: true });
     el.addEventListener('touchmove', onTouchMove, { capture: true, passive: false });
     el.addEventListener('touchend', onTouchEnd);
     el.addEventListener('touchcancel', onTouchEnd);
+    const onSpaceDown = (e: KeyboardEvent): void => onSpace(e, true);
+    const onSpaceUp = (e: KeyboardEvent): void => onSpace(e, false);
+    window.addEventListener('keydown', onSpaceDown);
+    window.addEventListener('keyup', onSpaceUp);
     return () => {
       el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('mousedown', onGrabMouseDown, { capture: true });
+      el.removeEventListener('auxclick', onAuxClick);
       el.removeEventListener('touchstart', onTouchStart, { capture: true });
       el.removeEventListener('touchmove', onTouchMove, { capture: true });
       el.removeEventListener('touchend', onTouchEnd);
       el.removeEventListener('touchcancel', onTouchEnd);
+      window.removeEventListener('keydown', onSpaceDown);
+      window.removeEventListener('keyup', onSpaceUp);
     };
   }, []);
 
@@ -388,8 +433,56 @@ export function StageCanvas(): ReactElement {
     panCleanupRef.current = null;
     const moved = panRef.current?.moved ?? false;
     panRef.current = null;
-    applyCursor('grab');
+    applyCursor(spaceHeldRef.current ? 'grab' : 'default');
     if (deselectIfClick && !moved) clearPerformerSelection();
+  };
+
+  beginPanRef.current = (clientX: number, clientY: number, deselectIfClick: boolean): void => {
+    if (panRef.current) return;
+    stageRef.current?.stopDrag();
+    marqueeRef.current = null;
+    setMarquee(null);
+    panRef.current = {
+      x: clientX,
+      y: clientY,
+      panX: viewRef.current.panX,
+      panY: viewRef.current.panY,
+      moved: false,
+    };
+    applyCursor('grabbing');
+    const onMove = (ev: MouseEvent | TouchEvent): void => {
+      const pan = panRef.current;
+      if (pan === null) return;
+      if ('touches' in ev && ev.touches.length > 1) return;
+      const point = 'touches' in ev ? ev.touches[0] : ev;
+      if (point === undefined) return;
+      if ('touches' in ev) ev.preventDefault();
+      const dx = point.clientX - pan.x;
+      const dy = point.clientY - pan.y;
+      if (!pan.moved && Math.hypot(dx, dy) > 4) pan.moved = true;
+      const next = panView(
+        viewRef.current,
+        pan.panX + dx - viewRef.current.panX,
+        pan.panY + dy - viewRef.current.panY,
+      );
+      if (next !== viewRef.current) {
+        viewRef.current = next;
+        setView(next);
+      }
+    };
+    const onUp = (): void => stopPan(deselectIfClick);
+    panCleanupRef.current = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
+      window.removeEventListener('touchcancel', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
+    window.addEventListener('touchcancel', onUp);
   };
 
   const onStagePointerDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): void => {
@@ -421,61 +514,24 @@ export function StageCanvas(): ReactElement {
       return;
     }
     if (e.target === e.target.getStage() || e.target.name() === 'floor') {
+      if (panRef.current) return;
       // Clicking empty floor deselects the prop, re-enabling dancer editing
       // (dancers stop listening while a prop is selected, so it stays grabbable
       // even under a dancer).
       selectProp(null);
       const pointer = e.target.getStage()?.getPointerPosition();
-      const shift = !('touches' in e.evt) && e.evt.shiftKey;
-      // Shift-drag keeps the rubber band. A plain drag, mouse or one finger, grabs the plan.
-      if (shift && pointer != null && !isPlaying && !readOnly) {
-        marqueeRef.current = { x0: pointer.x, y0: pointer.y, moved: false };
+      const evt = e.evt;
+      // A finger has no space bar: dragging empty floor slides the plan.
+      if ('touches' in evt) {
+        const src = evt.touches[0];
+        if (src !== undefined) beginPanRef.current(src.clientX, src.clientY, true);
         return;
       }
-      const src = 'touches' in e.evt ? e.evt.touches[0] : e.evt;
-      // A finger also raises a pointer event. The grab is already running.
-      if (src === undefined || panRef.current) return;
-      panRef.current = {
-        x: src.clientX,
-        y: src.clientY,
-        panX: viewRef.current.panX,
-        panY: viewRef.current.panY,
-        moved: false,
-      };
-      applyCursor('grabbing');
-      const onMove = (ev: MouseEvent | TouchEvent): void => {
-        const pan = panRef.current;
-        if (pan === null) return;
-        if ('touches' in ev && ev.touches.length > 1) return;
-        const point = 'touches' in ev ? ev.touches[0] : ev;
-        if (point === undefined) return;
-        if ('touches' in ev) ev.preventDefault();
-        const dx = point.clientX - pan.x;
-        const dy = point.clientY - pan.y;
-        if (!pan.moved && Math.hypot(dx, dy) > 4) pan.moved = true;
-        const next = panView(
-          viewRef.current,
-          pan.panX + dx - viewRef.current.panX,
-          pan.panY + dy - viewRef.current.panY,
-        );
-        if (next !== viewRef.current) {
-          viewRef.current = next;
-          setView(next);
-        }
-      };
-      const onUp = (): void => stopPan(true);
-      panCleanupRef.current = () => {
-        window.removeEventListener('mousemove', onMove);
-        window.removeEventListener('mouseup', onUp);
-        window.removeEventListener('touchmove', onMove);
-        window.removeEventListener('touchend', onUp);
-        window.removeEventListener('touchcancel', onUp);
-      };
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('mouseup', onUp);
-      window.addEventListener('touchmove', onMove, { passive: false });
-      window.addEventListener('touchend', onUp);
-      window.addEventListener('touchcancel', onUp);
+      if (pointer != null && !isPlaying) {
+        marqueeRef.current = { x0: pointer.x, y0: pointer.y, moved: false };
+      } else {
+        clearPerformerSelection();
+      }
     }
   };
 
@@ -483,8 +539,7 @@ export function StageCanvas(): ReactElement {
     if (panRef.current) {
       applyCursor('grabbing');
     } else if (!('touches' in e.evt)) {
-      const empty = e.target === e.target.getStage() || e.target.name() === 'floor';
-      applyCursor(empty ? 'grab' : 'default');
+      applyCursor(spaceHeldRef.current ? 'grab' : 'default');
     }
     const pointer = e.target.getStage()?.getPointerPosition();
     if (penRef.current !== null && pointer != null) {
@@ -565,7 +620,7 @@ export function StageCanvas(): ReactElement {
         onTouchEnd={onStagePointerUp}
         onMouseLeave={() => {
           if (panRef.current) return;
-          applyCursor('grab');
+          applyCursor(spaceHeldRef.current ? 'grab' : 'default');
           marqueeRef.current = null;
           setMarquee(null);
           if (isCollabActive()) setAwarenessCursor(null);

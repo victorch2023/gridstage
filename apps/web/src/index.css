@@ -252,6 +252,17 @@ input[type='number'] {
   font-size: 12px;
 }
 
+/* Group edit: filled gray, still writable. The value applies to everyone selected. */
+input.group-edit {
+  background: #e8eaed;
+}
+
+input.group-edit:focus {
+  background: #e8eaed;
+  border-color: var(--tungsten);
+  outline: none;
+}
+
 input[type='range'] {
   accent-color: var(--tungsten);
 }

@@ -5,6 +5,7 @@ import { showEndMs } from '../state/interpolate';
 import { audioDurationMs } from '../audio/audioPlayer';
 import { appendTap, bpmFromTaps, MIN_TAPS_TO_APPLY } from '../audio/tapTempo';
 import { useT } from '../i18n';
+import { SHOW_BEATS } from '../parkedFeatures';
 
 /** Parse a number input, returning null for empty/invalid text. */
 function num(value: string): number | null {
@@ -18,7 +19,7 @@ function num(value: string): number | null {
  * tempo while the music plays and stamp segment bounds from the moving
  * playhead, so the page behind must stay interactive.
  */
-export function BeatDialog(): ReactElement {
+export function BeatDialog(): ReactElement | null {
   const t = useT();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const performance = useEditor((s) => s.performance);
@@ -40,6 +41,8 @@ export function BeatDialog(): ReactElement {
   const [taps, setTaps] = useState<number[]>([]);
   const liveBpm = bpmFromTaps(taps);
   const onTap = (): void => setTaps((prev) => appendTap(prev, Date.now()));
+
+  if (!SHOW_BEATS) return null;
 
   return (
     <>

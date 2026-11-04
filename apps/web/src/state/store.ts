@@ -93,6 +93,11 @@ interface EditorState extends DocState {
   importRoster: (rows: readonly RosterRow[]) => void;
   removePerformer: (id: string) => void;
   updatePerformer: (id: string, patch: Partial<Omit<Performer, 'id' | 'performanceId'>>) => void;
+  /** One undo step: the same patch on every id, used when several dancers are selected. */
+  updatePerformers: (
+    ids: readonly string[],
+    patch: Partial<Omit<Performer, 'id' | 'performanceId'>>,
+  ) => void;
 
   addProp: (kind: PropKind, textOnly?: boolean) => void;
   removeProp: (id: string) => void;
@@ -595,6 +600,14 @@ export const useEditor = create<EditorState>()(
           mutateDoc((s) => ({
             performers: s.performers.map((p) => (p.id === id ? { ...p, ...patch } : p)),
           })),
+
+        updatePerformers: (ids, patch) =>
+          mutateDoc((s) => {
+            const wanted = new Set(ids);
+            return {
+              performers: s.performers.map((p) => (wanted.has(p.id) ? { ...p, ...patch } : p)),
+            };
+          }),
 
         addProp: (kind, textOnly = false) =>
           mutateDoc((s) => {

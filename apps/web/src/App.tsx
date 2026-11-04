@@ -24,6 +24,7 @@ import { useEditor } from './state/store';
 import { useStageBackground } from './state/stageBackground';
 import { useT } from './i18n';
 import { useLayout } from './state/layout';
+import { SHOW_STAGE_SNAP } from './parkedFeatures';
 import { PanelResizer } from './components/PanelResizer';
 import { BackupNudge } from './components/BackupNudge';
 import { ExpiryNotice } from './components/ExpiryNotice';
@@ -142,15 +143,17 @@ export function App(): ReactElement {
           <div className="canvas-tools">
             {!show3d && (
               <>
-                <button
-                  type="button"
-                  className={`btn edit-only${snapToGrid ? ' btn-active' : ''}`}
-                  aria-pressed={snapToGrid}
-                  title={t.stage.snapTitle}
-                  onClick={() => setSnapToGrid(!snapToGrid)}
-                >
-                  {t.stage.snap}
-                </button>
+                {SHOW_STAGE_SNAP && (
+                  <button
+                    type="button"
+                    className={`btn edit-only${snapToGrid ? ' btn-active' : ''}`}
+                    aria-pressed={snapToGrid}
+                    title={t.stage.snapTitle}
+                    onClick={() => setSnapToGrid(!snapToGrid)}
+                  >
+                    {t.stage.snap}
+                  </button>
+                )}
                 <button
                   type="button"
                   className={`btn edit-only expert-only-ui${annotateMode === 'pen' ? ' btn-active' : ''}`}

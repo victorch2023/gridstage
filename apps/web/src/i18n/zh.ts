@@ -397,6 +397,8 @@ export const zh: Messages = {
     name: '姓名',
     role: '角色',
     rolePlaceholder: '例如：隊長、flyer',
+    groupMixed: '多個',
+    groupFieldTitle: '輸入的內容會套用到所有選取的舞者',
     activeLabel: '本次上場',
     activeTitle: '取消勾選＝替補或請假：舞者保留所有站位，但不會出現在舞台、匯出與走位分析中',
     color: '顏色',
@@ -559,7 +561,8 @@ export const zh: Messages = {
     pinTitle: '在這個隊形上釘一則文字註記；點擊註記可刪除',
     pinPrompt: '註記內容：',
     canvasAria: '舞台畫布',
-    zoomHint: '在空白處拖曳可抓住並移動舞台。滾輪或雙指可縮放。按住 Shift 拖曳可框選多人。',
+    zoomHint:
+      '在空白處拖曳可框選多人。按住空白鍵或滑鼠中鍵拖曳可移動舞台。觸控時單指移動。滾輪或雙指可縮放。',
     closeDrawerAria: '關閉側邊面板',
     audience: '觀眾席',
     loading3d: '正在載入 3D 預覽…',

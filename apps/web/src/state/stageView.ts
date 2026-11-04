@@ -24,6 +24,22 @@ export const MAX_STAGE_ZOOM = 8;
 
 export const IDENTITY_STAGE_VIEW: StageView = { zoom: 1, panX: 0, panY: 0 };
 
+/**
+ * Space is also the play shortcut. A hold that actually pans the plan must
+ * not toggle playback when the key comes up.
+ */
+let spacePanUsed = false;
+
+export function noteSpacePan(): void {
+  spacePanUsed = true;
+}
+
+export function takeSpacePan(): boolean {
+  const used = spacePanUsed;
+  spacePanUsed = false;
+  return used;
+}
+
 /** Slide the plan by a screen delta, in pixels. Stored meters never change. */
 export function panView(view: StageView, dx: number, dy: number): StageView {
   if (!Number.isFinite(dx) || !Number.isFinite(dy) || (dx === 0 && dy === 0)) return view;

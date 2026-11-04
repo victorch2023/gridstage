@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
 import { useEditor } from '../state/store';
+import { takeSpacePan } from '../state/stageView';
 import { useReadOnly } from '../state/viewMode';
+
+const SPACE_TAP_MS = 400;
 
 const NUDGE_M = 0.1;
 const NUDGE_BIG_M = 1;
@@ -8,7 +11,8 @@ const ROTATE_STEP_DEG = 15;
 
 /**
  * Global editor hotkeys: arrows nudge (Shift = 1m), [ ] rotate ±15°,
- * Space toggles play, Delete/Backspace removes the selection (performers if
+ * A short Space tap toggles play. Holding Space grabs the plan instead.
+ * Delete/Backspace removes the selection (performers if
  * any are selected, else the formation), Escape deselects,
  * Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y undo/redo, Ctrl+C/V copy-paste positions,
  * Ctrl+A selects everyone, Ctrl+D duplicates the formation.
@@ -16,21 +20,27 @@ const ROTATE_STEP_DEG = 15;
  */
 export function useAppHotkeys(togglePlay: () => void): void {
   useEffect(() => {
+    let spaceArmed = false;
+    let spaceDownAt = 0;
+
     function onKeyDown(e: KeyboardEvent): void {
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName ?? '';
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
 
+      if (e.key === ' ') {
+        e.preventDefault();
+        if (!e.repeat && !spaceArmed) {
+          spaceArmed = true;
+          spaceDownAt = Date.now();
+        }
+        if (useReadOnly.getState().readOnly) return;
+      }
+
       const s = useEditor.getState();
 
       // Viewers can play/pause but not edit.
-      if (useReadOnly.getState().readOnly) {
-        if (e.key === ' ') {
-          e.preventDefault();
-          togglePlay();
-        }
-        return;
-      }
+      if (useReadOnly.getState().readOnly) return;
 
       if (e.ctrlKey || e.metaKey) {
         switch (e.key.toLowerCase()) {
@@ -97,15 +107,27 @@ export function useAppHotkeys(togglePlay: () => void): void {
         case ']':
           s.rotateSelected(ROTATE_STEP_DEG);
           break;
-        case ' ':
-          e.preventDefault();
-          togglePlay();
-          break;
         default:
           break;
       }
     }
+
+    function onKeyUp(e: KeyboardEvent): void {
+      if (e.key !== ' ' || !spaceArmed) return;
+      spaceArmed = false;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName ?? '';
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+      if (takeSpacePan()) return;
+      if (Date.now() - spaceDownAt > SPACE_TAP_MS) return;
+      togglePlay();
+    }
+
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+    };
   }, [togglePlay]);
 }
