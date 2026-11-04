@@ -416,6 +416,8 @@ export const en = {
     rolePlaceholder: 'e.g. captain, flyer',
     groupMixed: 'Several',
     groupFieldTitle: 'What you type is applied to every selected performer',
+    groupMoveTitle: 'Moves the whole group and keeps the spacing between them',
+    groupRemoveTitle: 'Removes every selected performer from the cast',
     activeLabel: 'Performing this run',
     activeTitle:
       'Uncheck to mark an understudy or absence: the dancer keeps every position but is hidden from the stage, exports and analysis',
@@ -622,6 +624,7 @@ export const en = {
     deleteAria: (excerpt: string): string => `Delete comment: ${excerpt}`,
     placeholderFormation: 'Note on this formation…',
     placeholderPerformer: 'Note on this performer…',
+    placeholderGroup: 'Note for everyone selected…',
     newCommentAria: 'New comment',
     add: 'Add',
   },

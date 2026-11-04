@@ -92,6 +92,8 @@ interface EditorState extends DocState {
   addPerformer: () => void;
   importRoster: (rows: readonly RosterRow[]) => void;
   removePerformer: (id: string) => void;
+  /** Remove every id in one undo step and clear them from the selection. */
+  removePerformers: (ids: readonly string[]) => void;
   updatePerformer: (id: string, patch: Partial<Omit<Performer, 'id' | 'performanceId'>>) => void;
   /** One undo step: the same patch on every id, used when several dancers are selected. */
   updatePerformers: (
@@ -197,6 +199,10 @@ interface EditorState extends DocState {
   /** Same, but WITHOUT recording history — for continuous drag frames. */
   setPositionLive: (formationId: string, performerId: string, x: number, y: number) => void;
   setRotation: (formationId: string, performerId: string, rotation: number) => void;
+  /** Slide the selected group so its centroid lands on this coordinate. Spacing stays. */
+  moveSelectedCentroid: (axis: 'x' | 'y', target: number) => void;
+  /** Give every selected dancer the same facing in the current formation. */
+  setSelectedRotation: (rotation: number) => void;
   /** Set or clear (null) this performer's state marker in one formation. */
   setMarker: (formationId: string, performerId: string, marker: PositionMarker | null) => void;
   /** Set the Bézier control point for this performer's transition OUT. */
@@ -239,6 +245,8 @@ interface EditorState extends DocState {
   removeCountSegment: (id: string) => void;
 
   addComment: (text: string, performerId: string | null, authorName: string) => void;
+  /** The same note on every dancer, in one undo step. */
+  addComments: (text: string, performerIds: readonly string[], authorName: string) => void;
   removeComment: (id: string) => void;
   /** Flip a comment's resolved flag (resolved notes collapse in the panel). */
   toggleCommentResolved: (id: string) => void;
@@ -335,6 +343,29 @@ export function createInitialDoc(): DocState {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+/** How far the group can slide so its centroid hits `target` without anyone leaving the stage. */
+function groupDelta(
+  spots: readonly { x: number; y: number }[],
+  axis: 'x' | 'y',
+  target: number,
+  min: number,
+  max: number,
+): number {
+  const centroid = spots.reduce((sum, pos) => sum + pos[axis], 0) / spots.length;
+  let delta = target - centroid;
+  for (const pos of spots) {
+    const at = pos[axis];
+    if (delta > 0) {
+      const room = max - at;
+      if (room < delta) delta = Math.max(0, room);
+    } else if (delta < 0) {
+      const room = at - min;
+      if (room < -delta) delta = -Math.max(0, room);
+    }
+  }
+  return delta;
 }
 
 /** Placeable extent including wings: x ∈ [-left, w+right], y ∈ [-back, h]. */
@@ -593,6 +624,24 @@ export const useEditor = create<EditorState>()(
               performers: s.performers.filter((p) => p.id !== id),
               positions,
               selectedPerformerIds: s.selectedPerformerIds.filter((pid) => pid !== id),
+            };
+          }),
+
+        removePerformers: (ids) =>
+          mutateDoc((s) => {
+            const drop = new Set(ids);
+            if (drop.size === 0) return {};
+            const positions: PositionMap = Object.fromEntries(
+              Object.entries(s.positions).map(([fid, byPerformer]) => {
+                const rest = { ...byPerformer };
+                for (const id of drop) delete rest[id];
+                return [fid, rest];
+              }),
+            );
+            return {
+              performers: s.performers.filter((p) => !drop.has(p.id)),
+              positions,
+              selectedPerformerIds: s.selectedPerformerIds.filter((pid) => !drop.has(pid)),
             };
           }),
 
@@ -1309,6 +1358,55 @@ export const useEditor = create<EditorState>()(
             };
           }),
 
+        moveSelectedCentroid: (axis, target) => {
+          const before = get();
+          const fid = before.selectedFormationId;
+          const current = before.positions[fid];
+          if (current === undefined) return;
+          const spots = before.selectedPerformerIds
+            .map((id) => current[id])
+            .filter((pos) => pos !== undefined);
+          if (spots.length === 0) return;
+          const bounds = stageBounds(before.performance);
+          const delta = groupDelta(
+            spots,
+            axis,
+            target,
+            axis === 'x' ? bounds.minX : bounds.minY,
+            axis === 'x' ? bounds.maxX : bounds.maxY,
+          );
+          if (Math.abs(delta) < 1e-6) return;
+          mutateDoc((s) => {
+            const map = s.positions[fid];
+            if (map === undefined) return {};
+            const updated = { ...map };
+            for (const id of s.selectedPerformerIds) {
+              const pos = updated[id];
+              if (pos === undefined) continue;
+              updated[id] = { ...pos, [axis]: pos[axis] + delta };
+            }
+            return { positions: { ...s.positions, [fid]: updated } };
+          });
+        },
+
+        setSelectedRotation: (rotation) =>
+          mutateDoc((s) => {
+            const fid = s.selectedFormationId;
+            const current = s.positions[fid];
+            if (current === undefined) return {};
+            const normalized = ((rotation % 360) + 360) % 360;
+            const updated = { ...current };
+            let changed = false;
+            for (const id of s.selectedPerformerIds) {
+              const pos = updated[id];
+              if (pos === undefined || pos.rotation === normalized) continue;
+              updated[id] = { ...pos, rotation: normalized };
+              changed = true;
+            }
+            if (!changed) return {};
+            return { positions: { ...s.positions, [fid]: updated } };
+          }),
+
         setMarker: (formationId, performerId, marker) =>
           mutateDoc((s) => {
             const existing = s.positions[formationId]?.[performerId];
@@ -1516,6 +1614,22 @@ export const useEditor = create<EditorState>()(
               createdAt: new Date().toISOString(),
             };
             return { comments: [...s.comments, comment] };
+          }),
+
+        addComments: (text, performerIds, authorName) =>
+          mutateDoc((s) => {
+            const trimmed = text.trim();
+            if (trimmed === '' || performerIds.length === 0) return {};
+            const createdAt = new Date().toISOString();
+            const added: DocComment[] = performerIds.map((performerId) => ({
+              id: newId(),
+              formationId: s.selectedFormationId,
+              performerId,
+              authorName,
+              text: trimmed,
+              createdAt,
+            }));
+            return { comments: [...s.comments, ...added] };
           }),
 
         removeComment: (id) =>

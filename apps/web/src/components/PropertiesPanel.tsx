@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { isPerformerActive } from '@gridstage/shared-types';
 import { useEditor } from '../state/store';
@@ -233,6 +233,17 @@ function sharedText(values: readonly string[]): string | null {
   return values.every((value) => value === first) ? first : null;
 }
 
+function sharedRounded(values: readonly number[]): number | null {
+  const first = values[0];
+  if (first === undefined) return null;
+  const rounded = Math.round(first);
+  return values.every((value) => Math.round(value) === rounded) ? rounded : null;
+}
+
+function average(values: readonly number[]): number {
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
 function GroupTextField({
   id,
   label,
@@ -266,11 +277,133 @@ function GroupTextField({
   );
 }
 
+function GroupActive({
+  ids,
+  active,
+}: {
+  ids: readonly string[];
+  active: readonly boolean[];
+}): ReactElement {
+  const t = useT();
+  const updatePerformers = useEditor((s) => s.updatePerformers);
+  const box = useRef<HTMLInputElement>(null);
+  const allOn = active.length > 0 && active.every(Boolean);
+  const mixed = active.some(Boolean) && !allOn;
+  useEffect(() => {
+    if (box.current !== null) box.current.indeterminate = mixed;
+  }, [mixed]);
+  return (
+    <label className="group-check" title={t.performer.groupFieldTitle}>
+      <input
+        ref={box}
+        type="checkbox"
+        checked={allOn}
+        onChange={(e) => updatePerformers(ids, { active: e.target.checked })}
+      />
+      {t.performer.activeLabel}
+    </label>
+  );
+}
+
+function GroupCoords({ xs, ys }: { xs: readonly number[]; ys: readonly number[] }): ReactElement {
+  const t = useT();
+  const moveSelectedCentroid = useEditor((s) => s.moveSelectedCentroid);
+  return (
+    <div style={{ display: 'flex', gap: 8 }}>
+      <div className="field" style={{ flex: 1 }}>
+        <label htmlFor="group-x" title={t.performer.groupMoveTitle}>
+          {t.performer.xLabel}
+        </label>
+        <NumberField
+          id="group-x"
+          className="group-edit"
+          title={t.performer.groupMoveTitle}
+          step={0.1}
+          decimals={2}
+          value={average(xs)}
+          onCommit={(v) => moveSelectedCentroid('x', v)}
+        />
+      </div>
+      <div className="field" style={{ flex: 1 }}>
+        <label htmlFor="group-y" title={t.performer.groupMoveTitle}>
+          {t.performer.yLabel}
+        </label>
+        <NumberField
+          id="group-y"
+          className="group-edit"
+          title={t.performer.groupMoveTitle}
+          step={0.1}
+          decimals={2}
+          value={average(ys)}
+          onCommit={(v) => moveSelectedCentroid('y', v)}
+        />
+      </div>
+    </div>
+  );
+}
+
+function GroupFacing({ shared, slider }: { shared: number | null; slider: number }): ReactElement {
+  const t = useT();
+  const setSelectedRotation = useEditor((s) => s.setSelectedRotation);
+  const [draft, setDraft] = useState<string | null>(null);
+  const shown = draft ?? (shared === null ? '' : String(shared));
+  return (
+    <div className="field">
+      <label htmlFor="group-rot">{t.performer.facingLabel}</label>
+      <input
+        id="group-rot"
+        type="range"
+        min={0}
+        max={359}
+        value={Math.min(359, Math.max(0, Math.round(slider)))}
+        title={t.performer.groupFieldTitle}
+        onChange={(e) => {
+          const v = num(e.target.value);
+          if (v !== null) {
+            setDraft(null);
+            setSelectedRotation(v);
+          }
+        }}
+      />
+      <input
+        className="group-edit"
+        type="number"
+        min={0}
+        max={359}
+        aria-label={t.performer.facingDegreesAria}
+        title={t.performer.groupFieldTitle}
+        placeholder={shared === null ? t.performer.groupMixed : undefined}
+        value={shown}
+        onFocus={(e) => e.currentTarget.select()}
+        onChange={(e) => {
+          setDraft(e.target.value);
+          const n = Number(e.target.value);
+          if (e.target.value.trim() !== '' && !Number.isNaN(n)) setSelectedRotation(n);
+        }}
+        onBlur={() => setDraft(null)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur();
+        }}
+      />
+    </div>
+  );
+}
+
 function MultiSelectSection({ count }: { count: number }): ReactElement {
   const t = useT();
   const performers = useEditor((s) => s.performers);
   const selectedPerformerIds = useEditor((s) => s.selectedPerformerIds);
+  const selectedFormationId = useEditor((s) => s.selectedFormationId);
+  const positions = useEditor((s) => s.positions);
+  const updatePerformers = useEditor((s) => s.updatePerformers);
+  const removePerformers = useEditor((s) => s.removePerformers);
   const selected = performers.filter((p) => selectedPerformerIds.includes(p.id));
+  const spots = selected
+    .map((p) => positions[selectedFormationId]?.[p.id])
+    .filter((pos) => pos !== undefined);
+  const rotations = spots.map((pos) => pos.rotation);
+  const sharedRotation = sharedRounded(rotations);
+  const sharedColor = sharedText(selected.map((p) => p.color));
   const swapSelected = useEditor((s) => s.swapSelected);
   const alignSelected = useEditor((s) => s.alignSelected);
   const distributeSelected = useEditor((s) => s.distributeSelected);
@@ -295,6 +428,33 @@ function MultiSelectSection({ count }: { count: number }): ReactElement {
           values={selected.map((p) => p.role)}
           emptyPlaceholder={t.performer.rolePlaceholder}
         />
+        <GroupActive
+          ids={selectedPerformerIds}
+          active={selected.map((p) => isPerformerActive(p))}
+        />
+        <div className="field">
+          <label htmlFor="group-color">{t.performer.color}</label>
+          <ColorField
+            id="group-color"
+            value={sharedColor ?? '#9aa0a6'}
+            title={sharedColor === null ? t.performer.groupMixed : t.performer.groupFieldTitle}
+            onChange={(color) => updatePerformers(selectedPerformerIds, { color })}
+          />
+        </div>
+        {spots.length > 0 && (
+          <>
+            <GroupCoords xs={spots.map((pos) => pos.x)} ys={spots.map((pos) => pos.y)} />
+            <GroupFacing shared={sharedRotation} slider={sharedRotation ?? average(rotations)} />
+          </>
+        )}
+        <button
+          type="button"
+          className="btn btn-danger"
+          title={t.performer.groupRemoveTitle}
+          onClick={() => removePerformers(selectedPerformerIds)}
+        >
+          {t.performer.removeFromCast}
+        </button>
         <span className="field-label expert-only-ui">{t.performer.tools}</span>
         {count === 2 && (
           <button
@@ -389,6 +549,7 @@ function MultiSelectSection({ count }: { count: number }): ReactElement {
           </button>
         </div>
       </div>
+      <CommentsSection performerId={null} performerIds={selectedPerformerIds} />
     </>
   );
 }

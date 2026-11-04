@@ -421,6 +421,8 @@ export const es: Messages = {
     rolePlaceholder: 'p. ej. capitán, flyer',
     groupMixed: 'Varios',
     groupFieldTitle: 'Lo que escribas se aplica a todos los bailarines seleccionados',
+    groupMoveTitle: 'Mueve a todo el grupo y conserva las distancias entre ellos',
+    groupRemoveTitle: 'Quita del elenco a todos los seleccionados',
     activeLabel: 'Actúa en esta pasada',
     activeTitle:
       'Desmarca para un suplente o una ausencia: el bailarín conserva cada posición, pero se oculta del escenario, las exportaciones y el análisis',
@@ -632,6 +634,7 @@ export const es: Messages = {
     deleteAria: (excerpt: string): string => `Eliminar el comentario: ${excerpt}`,
     placeholderFormation: 'Nota sobre esta formación…',
     placeholderPerformer: 'Nota sobre este bailarín…',
+    placeholderGroup: 'Nota para todos los seleccionados…',
     newCommentAria: 'Comentario nuevo',
     add: 'Añadir',
   },

@@ -263,6 +263,16 @@ input.group-edit:focus {
   outline: none;
 }
 
+label.group-check {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+  background: #e8eaed;
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
 input[type='range'] {
   accent-color: var(--tungsten);
 }
