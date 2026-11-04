@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GridStage — 載入示範舞碼</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        background: #ffffff;
+        color: #202124;
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        margin: 0;
+      }
+      main {
+        max-width: 30rem;
+        padding: 2rem;
+        text-align: center;
+      }
+      button {
+        font-size: 1rem;
+        padding: 0.7rem 1.4rem;
+        border-radius: 8px;
+        border: 0;
+        background: #1a73e8;
+        color: #ffffff;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      a {
+        color: #1a73e8;
+      }
+      ul {
+        text-align: left;
+        line-height: 1.6;
+      }
+      #done {
+        margin-top: 1rem;
+        color: #58b5a4;
+        min-height: 1.2em;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>GridStage 示範舞碼</h1>
+      <p>按下按鈕，把兩份示範舞碼載入這個瀏覽器的作品庫（Library）：</p>
+      <ul>
+        <li>Demo · Paths & Facing</li>
+        <li>Demo · Five Dancers</li>
+      </ul>
+      <button id="seed">載入示範舞碼</button>
+      <p id="done"></p>
+      <p><a href="/">← 回到 GridStage</a>，開啟左上角的 Library 就能看到。</p>
+    </main>
+    <script>
+      const DOCS = [
+        {
+          performance: {
+            id: 'demo-paths',
+            orgId: 'local',
+            title: 'Demo · Paths & Facing',
+            stageWidth: 12,
+            stageHeight: 8,
+            bpm: 120,
+            audioAssetId: null,
+            beatMarkersMs: [],
+            sections: [],
+            countSegments: [],
+          },
+          performers: [
+            {
+              id: 'demo-paths-p1',
+              performanceId: 'demo-paths',
+              name: 'Ava',
+              color: '#e8843c',
+              role: '',
+              avatarUrl: null,
+              badge: 'A',
+            },
+            {
+              id: 'demo-paths-p2',
+              performanceId: 'demo-paths',
+              name: 'Ben',
+              color: '#5b8ff0',
+              role: '',
+              avatarUrl: null,
+              badge: 'B',
+            },
+            {
+              id: 'demo-paths-p3',
+              performanceId: 'demo-paths',
+              name: 'Cleo',
+              color: '#58b5a4',
+              role: '',
+              avatarUrl: null,
+              badge: 'C',
+            },
+          ],
+          props: [],
+          formations: [
+            {
+              id: 'demo-paths-f1',
+              performanceId: 'demo-paths',
+              orderIndex: 0,
+              startTimeMs: 0,
+              durationMs: 4000,
+              transitionType: 'linear',
+              name: 'Line — face front',
+            },
+            {
+              id: 'demo-paths-f2',
+              performanceId: 'demo-paths',
+              orderIndex: 1,
+              startTimeMs: 8000,
+              durationMs: 4000,
+              transitionType: 'curve',
+              name: 'Spread — turned',
+            },
+            {
+              id: 'demo-paths-f3',
+              performanceId: 'demo-paths',
+              orderIndex: 2,
+              startTimeMs: 16000,
+              durationMs: 4000,
+              transitionType: 'linear',
+              name: 'Cluster — face front',
+            },
+          ],
+          positions: {
+            'demo-paths-f1': {
+              'demo-paths-p1': {
+                formationId: 'demo-paths-f1',
+                performerId: 'demo-paths-p1',
+                x: 3,
+                y: 6.5,
+                rotation: 0,
+              },
+              'demo-paths-p2': {
+                formationId: 'demo-paths-f1',
+                performerId: 'demo-paths-p2',
+                x: 6,
+                y: 6.5,
+                rotation: 0,
+              },
+              'demo-paths-p3': {
+                formationId: 'demo-paths-f1',
+                performerId: 'demo-paths-p3',
+                x: 9,
+                y: 6.5,
+                rotation: 0,
+              },
+            },
+            'demo-paths-f2': {
+              'demo-paths-p1': {
+                formationId: 'demo-paths-f2',
+                performerId: 'demo-paths-p1',
+                x: 2,
+                y: 2,
+                rotation: 90,
+                curveControlPoints: [{ x: 2.5, y: 4.5 }],
+              },
+              'demo-paths-p2': {
+                formationId: 'demo-paths-f2',
+                performerId: 'demo-paths-p2',
+                x: 6,
+                y: 4,
+                rotation: 180,
+                curveControlPoints: [{ x: 8, y: 4.5 }],
+              },
+              'demo-paths-p3': {
+                formationId: 'demo-paths-f2',
+                performerId: 'demo-paths-p3',
+                x: 10,
+                y: 6,
+                rotation: 0,
+                curveControlPoints: [{ x: 10, y: 3 }],
+              },
+            },
+            'demo-paths-f3': {
+              'demo-paths-p1': {
+                formationId: 'demo-paths-f3',
+                performerId: 'demo-paths-p1',
+                x: 5,
+                y: 3,
+                rotation: 0,
+              },
+              'demo-paths-p2': {
+                formationId: 'demo-paths-f3',
+                performerId: 'demo-paths-p2',
+                x: 6,
+                y: 5,
+                rotation: 0,
+              },
+              'demo-paths-p3': {
+                formationId: 'demo-paths-f3',
+                performerId: 'demo-paths-p3',
+                x: 7,
+                y: 3,
+                rotation: 0,
+              },
+            },
+          },
+          comments: [],
+          annotations: [],
+        },
+        {
+          performance: {
+            id: 'demo-five',
+            orgId: 'local',
+            title: 'Demo · Five Dancers',
+            stageWidth: 12,
+            stageHeight: 8,
+            bpm: 120,
+            audioAssetId: null,
+            beatMarkersMs: [],
+            sections: [],
+            countSegments: [],
+          },
+          performers: [
+            {
+              id: 'demo-five-p1',
+              performanceId: 'demo-five',
+              name: 'D1',
+              color: '#e8843c',
+              role: '',
+              avatarUrl: null,
+              badge: '1',
+            },
+            {
+              id: 'demo-five-p2',
+              performanceId: 'demo-five',
+              name: 'D2',
+              color: '#5b8ff0',
+              role: '',
+              avatarUrl: null,
+              badge: '2',
+            },
+            {
+              id: 'demo-five-p3',
+              performanceId: 'demo-five',
+              name: 'D3',
+              color: '#58b5a4',
+              role: '',
+              avatarUrl: null,
+              badge: '3',
+            },
+            {
+              id: 'demo-five-p4',
+              performanceId: 'demo-five',
+              name: 'D4',
+              color: '#d0668f',
+              role: '',
+              avatarUrl: null,
+              badge: '4',
+            },
+            {
+              id: 'demo-five-p5',
+              performanceId: 'demo-five',
+              name: 'D5',
+              color: '#8f7ee0',
+              role: '',
+              avatarUrl: null,
+              badge: '5',
+            },
+          ],
+          props: [],
+          formations: [
+            {
+              id: 'demo-five-f1',
+              performanceId: 'demo-five',
+              orderIndex: 0,
+              startTimeMs: 0,
+              durationMs: 4000,
+              transitionType: 'linear',
+              name: 'Line',
+            },
+            {
+              id: 'demo-five-f2',
+              performanceId: 'demo-five',
+              orderIndex: 1,
+              startTimeMs: 8000,
+              durationMs: 4000,
+              transitionType: 'linear',
+              name: 'V',
+            },
+            {
+              id: 'demo-five-f3',
+              performanceId: 'demo-five',
+              orderIndex: 2,
+              startTimeMs: 16000,
+              durationMs: 4000,
+              transitionType: 'curve',
+              name: 'Circle',
+            },
+            {
+              id: 'demo-five-f4',
+              performanceId: 'demo-five',
+              orderIndex: 3,
+              startTimeMs: 24000,
+              durationMs: 4000,
+              transitionType: 'linear',
+              name: 'Two rows',
+            },
+            {
+              id: 'demo-five-f5',
+              performanceId: 'demo-five',
+              orderIndex: 4,
+              startTimeMs: 32000,
+              durationMs: 4000,
+              transitionType: 'linear',
+              name: 'Diagonal — turned',
+            },
+          ],
+          positions: {
+            'demo-five-f1': {
+              'demo-five-p1': {
+                formationId: 'demo-five-f1',
+                performerId: 'demo-five-p1',
+                x: 2,
+                y: 6.5,
+                rotation: 0,
+              },
+              'demo-five-p2': {
+                formationId: 'demo-five-f1',
+                performerId: 'demo-five-p2',
+                x: 4,
+                y: 6.5,
+                rotation: 0,
+              },
+              'demo-five-p3': {
+                formationId: 'demo-five-f1',
+                performerId: 'demo-five-p3',
+                x: 6,
+                y: 6.5,
+                rotation: 0,
+              },
+              'demo-five-p4': {
+                formationId: 'demo-five-f1',
+                performerId: 'demo-five-p4',
+                x: 8,
+                y: 6.5,
+                rotation: 0,
+              },
+              'demo-five-p5': {
+                formationId: 'demo-five-f1',
+                performerId: 'demo-five-p5',
+                x: 10,
+                y: 6.5,
+                rotation: 0,
+              },
+            },
+            'demo-five-f2': {
+              'demo-five-p1': {
+                formationId: 'demo-five-f2',
+                performerId: 'demo-five-p1',
+                x: 6,
+                y: 2,
+                rotation: 0,
+              },
+              'demo-five-p2': {
+                formationId: 'demo-five-f2',
+                performerId: 'demo-five-p2',
+                x: 4,
+                y: 3.5,
+                rotation: 0,
+              },
+              'demo-five-p3': {
+                formationId: 'demo-five-f2',
+                performerId: 'demo-five-p3',
+                x: 8,
+                y: 3.5,
+                rotation: 0,
+              },
+              'demo-five-p4': {
+                formationId: 'demo-five-f2',
+                performerId: 'demo-five-p4',
+                x: 2,
+                y: 5,
+                rotation: 0,
+              },
+              'demo-five-p5': {
+                formationId: 'demo-five-f2',
+                performerId: 'demo-five-p5',
+                x: 10,
+                y: 5,
+                rotation: 0,
+              },
+            },
+            'demo-five-f3': {
+              'demo-five-p1': {
+                formationId: 'demo-five-f3',
+                performerId: 'demo-five-p1',
+                x: 6,
+                y: 1.5,
+                rotation: 0,
+                curveControlPoints: [{ x: 4.5, y: 3.5 }],
+              },
+              'demo-five-p2': {
+                formationId: 'demo-five-f3',
+                performerId: 'demo-five-p2',
+                x: 3.6,
+                y: 3.3,
+                rotation: 0,
+                curveControlPoints: [{ x: 4.8, y: 1.5 }],
+              },
+              'demo-five-p3': {
+                formationId: 'demo-five-f3',
+                performerId: 'demo-five-p3',
+                x: 4.55,
+                y: 6.1,
+                rotation: 0,
+                curveControlPoints: [{ x: 5, y: 4 }],
+              },
+              'demo-five-p4': {
+                formationId: 'demo-five-f3',
+                performerId: 'demo-five-p4',
+                x: 7.45,
+                y: 6.1,
+                rotation: 0,
+                curveControlPoints: [{ x: 6.2, y: 7.5 }],
+              },
+              'demo-five-p5': {
+                formationId: 'demo-five-f3',
+                performerId: 'demo-five-p5',
+                x: 8.4,
+                y: 3.3,
+                rotation: 0,
+                curveControlPoints: [{ x: 9.5, y: 4.65 }],
+              },
+            },
+            'demo-five-f4': {
+              'demo-five-p1': {
+                formationId: 'demo-five-f4',
+                performerId: 'demo-five-p1',
+                x: 4,
+                y: 3,
+                rotation: 0,
+              },
+              'demo-five-p2': {
+                formationId: 'demo-five-f4',
+                performerId: 'demo-five-p2',
+                x: 6,
+                y: 3,
+                rotation: 0,
+              },
+              'demo-five-p3': {
+                formationId: 'demo-five-f4',
+                performerId: 'demo-five-p3',
+                x: 8,
+                y: 3,
+                rotation: 0,
+              },
+              'demo-five-p4': {
+                formationId: 'demo-five-f4',
+                performerId: 'demo-five-p4',
+                x: 5,
+                y: 6,
+                rotation: 0,
+              },
+              'demo-five-p5': {
+                formationId: 'demo-five-f4',
+                performerId: 'demo-five-p5',
+                x: 7,
+                y: 6,
+                rotation: 0,
+              },
+            },
+            'demo-five-f5': {
+              'demo-five-p1': {
+                formationId: 'demo-five-f5',
+                performerId: 'demo-five-p1',
+                x: 2,
+                y: 7,
+                rotation: 45,
+              },
+              'demo-five-p2': {
+                formationId: 'demo-five-f5',
+                performerId: 'demo-five-p2',
+                x: 4,
+                y: 6,
+                rotation: 45,
+              },
+              'demo-five-p3': {
+                formationId: 'demo-five-f5',
+                performerId: 'demo-five-p3',
+                x: 6,
+                y: 5,
+                rotation: 45,
+              },
+              'demo-five-p4': {
+                formationId: 'demo-five-f5',
+                performerId: 'demo-five-p4',
+                x: 8,
+                y: 4,
+                rotation: 45,
+              },
+              'demo-five-p5': {
+                formationId: 'demo-five-f5',
+                performerId: 'demo-five-p5',
+                x: 10,
+                y: 3,
+                rotation: 45,
+              },
+            },
+          },
+          comments: [],
+          annotations: [],
+        },
+      ];
+      document.getElementById('seed').addEventListener('click', () => {
+        const index = JSON.parse(localStorage.getItem('gridstage-library') || '[]');
+        const byId = new Map(index.map((e) => [e.id, e]));
+        for (const doc of DOCS) {
+          localStorage.setItem('gridstage-doc:' + doc.performance.id, JSON.stringify(doc));
+          byId.set(doc.performance.id, {
+            id: doc.performance.id,
+            title: doc.performance.title,
+            updatedAt: new Date().toISOString(),
+            tags: (byId.get(doc.performance.id) || {}).tags || [],
+            archived: false,
+          });
+        }
+        localStorage.setItem('gridstage-library', JSON.stringify([...byId.values()]));
+        document.getElementById('done').textContent =
+          '✓ 已載入 ' + DOCS.length + ' 份，去 Library 開啟吧。';
+      });
+    </script>
+  </body>
+</html>
